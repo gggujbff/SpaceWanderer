@@ -202,7 +202,72 @@ Transform:
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &563246953
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 563246955}
+  - component: {fileID: 563246954}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &563246954
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 563246953}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 445ef7dba0758194eb545f51f6501e5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  hookTipPrefab: {fileID: 8025303905982688912, guid: 23fd96defb09a0c4aa761317db3c66a6, type: 3}
+  hookLinePrefab: {fileID: 8353227113731655016, guid: f5b3b1f41e946ab4c9f034077e5498bf, type: 3}
+  maxLength: 10
+  baseRotateSpeed: 30
+  baseLaunchSpeed: 10
+  baseRetrieveSpeed: 12
+  accelerateRotateSpeed: 100
+  accelerateLaunchSpeed: 20
+  accelerateRetrieveSpeed: 24
+  initialEnergy: 100
+  rotateSwitchEnergyCost: 10
+  accelerateEnergyCostPerSecond: 10
+  rotateSwitchCD: 2
+  accelerateCD: 2
+  rotateSwitchDelay: 0.2
+  currentState: 0
+  currentDir: 0
+  currentLength: 0
+  currentRotation: 0
+  currentEnergy: 0
+--- !u!4 &563246955
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 563246953}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
