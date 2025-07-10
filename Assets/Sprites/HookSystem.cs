@@ -1,4 +1,4 @@
-using UnityEngine;  
+using UnityEngine;
 
 public class HookSystem : MonoBehaviour
 {
@@ -16,6 +16,9 @@ public class HookSystem : MonoBehaviour
     [Header("基础属性")]
     [Tooltip("钩爪最大伸长距离")]
     public float maxLength = 10f;
+    
+    [Tooltip("待机时与中心的距离")]
+    public float standbyDistance = 2f; // 新增：待机距离
 
     [Tooltip("初始旋转速度")]
     public float baseRotateSpeed = 30f;
@@ -57,7 +60,7 @@ public class HookSystem : MonoBehaviour
     [Tooltip("旋转方向切换前摇时间（秒）")]
     public float rotateSwitchDelay = 0.2f;
 
-    
+
     [HideInInspector] public HookState currentState = HookState.ReadyToLaunch; // 当前钩爪状态
     [HideInInspector] public RotationDir currentDir = RotationDir.Clockwise; // 当前旋转方向
     [HideInInspector] public float currentLength = 0f; // 当前钩爪长度
@@ -69,14 +72,17 @@ public class HookSystem : MonoBehaviour
     private float rotateSwitchCDTimer = 0f; // 旋转切换冷却计时器
     private float accelerateCDTimer = 0f; // 加速冷却计时器
 
-    
+
     [HideInInspector] private LineRenderer hookLine;
     [HideInInspector] private Transform hookTip;
+    private HookTipCollisionHandler hookTipCollisionHandler;
 
     private void Start()
     {
         InitFromPrefabs();
         Init();
+        hookTipCollisionHandler = hookTip.GetComponent<HookTipCollisionHandler>();
+        hookTipCollisionHandler.hookSystem = this;
     }
 
     private void InitFromPrefabs()
@@ -107,14 +113,14 @@ public class HookSystem : MonoBehaviour
     {
         currentState = HookState.ReadyToLaunch;
         currentDir = RotationDir.Clockwise;
-        currentLength = 0f;
+        currentLength = standbyDistance; // 待机时使用待机距离
         currentRotation = 0f;
         currentEnergy = initialEnergy;
         rotateSwitchCDTimer = 0f;
         accelerateCDTimer = 0f;
     }
 
-    private void UpdateCDTimers(float deltaTime) 
+    private void UpdateCDTimers(float deltaTime)
     {
         if (rotateSwitchCDTimer > 0) rotateSwitchCDTimer -= deltaTime;
         if (accelerateCDTimer > 0) accelerateCDTimer -= deltaTime;
@@ -127,7 +133,7 @@ public class HookSystem : MonoBehaviour
             SwitchLaunchOrRetrieve();
         }
 
-        if (Input.GetKeyDown(KeyCode.A) && !isSwitchingDir && currentEnergy >= rotateSwitchEnergyCost && 
+        if (Input.GetKeyDown(KeyCode.A) && !isSwitchingDir && currentEnergy >= rotateSwitchEnergyCost &&
             rotateSwitchCDTimer <= 0 && currentState == HookState.ReadyToLaunch)
         {
             StartSwitchRotationDir();
@@ -145,7 +151,7 @@ public class HookSystem : MonoBehaviour
         }
     }
 
-    private void UpdateState(float deltaTime) 
+    private void UpdateState(float deltaTime)
     {
         switch (currentState)
         {
@@ -214,16 +220,52 @@ public class HookSystem : MonoBehaviour
             currentState = HookState.Retrieving;
         }
     }
+    
+    // 触发钩爪回收
+    public void RetrieveHook()
+    {
+        if (currentState == HookState.Launching)
+        {
+            currentState = HookState.Retrieving;
+            Debug.Log("开始回收钩爪！");
+        }
+    }
 
     private void UpdateRetrieving(float deltaTime) // 缩短钩爪
     {
         float speed = isAccelerating ? accelerateRetrieveSpeed : baseRetrieveSpeed;
         currentLength -= speed * deltaTime;
-        if (currentLength <= 0)
+        if (currentLength <= standbyDistance) // 回收时回到待机距离
         {
-            currentLength = 0;
+            currentLength = standbyDistance;
             currentState = HookState.ReadyToLaunch;
+            // 钩爪回收完成，处理能量
+            HandleGrabbedEnergy();
         }
+    }
+
+    private void HandleGrabbedEnergy()
+    {
+        GameObject grabbedEnergy = hookTipCollisionHandler.GetGrabbedEnergy();
+        if (grabbedEnergy != null)
+        {
+            Energy energyComponent = grabbedEnergy.GetComponent<Energy>();
+            if (energyComponent != null)
+            {
+                // 增加能量
+                GrabEnergy(energyComponent.energyAmount);
+            }
+            // 销毁能量物体
+            Destroy(grabbedEnergy);
+            // 释放抓取的能量引用
+            hookTipCollisionHandler.ReleaseGrabbedEnergy();
+        }
+    }
+
+    public void GrabEnergy(float energyAmount)
+    {
+        currentEnergy = Mathf.Min(initialEnergy, currentEnergy + energyAmount);
+        Debug.Log($"抓取能源，补充能量: +{energyAmount}, 剩余能量: {currentEnergy}");
     }
 
     private void UpdateHookVisual() // 更新绳索和钩尖位置
@@ -243,4 +285,4 @@ public class HookSystem : MonoBehaviour
         hookLine.SetPosition(0, transform.position);
         hookLine.SetPosition(1, hookTipPos);
     }
-}    
+}
