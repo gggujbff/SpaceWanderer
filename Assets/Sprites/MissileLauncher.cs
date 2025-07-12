@@ -6,6 +6,12 @@ public class MissileLauncher : MonoBehaviour
     [Tooltip("飞弹预制体")]
     public GameObject missilePrefab;
 
+    [Header("数量管理")]
+    [Tooltip("当前持有的飞弹数量")]
+    public int currentMissileCount = 5;  // 初始持有数量
+    [Tooltip("最大可存储的飞弹数量")]
+    public int maxMissileCount = 10;     // 存储上限
+
     [Header("发射参数")]
     [Tooltip("发射冷却时间（秒）")]
     public float cooldown = 2f;
@@ -22,6 +28,8 @@ public class MissileLauncher : MonoBehaviour
     void Awake()
     {
         hookSystem = GetComponent<HookSystem>();
+        // 确保初始数量不超过上限
+        currentMissileCount = Mathf.Clamp(currentMissileCount, 0, maxMissileCount);
     }
 
     void Update()
@@ -32,14 +40,17 @@ public class MissileLauncher : MonoBehaviour
         }
     }
 
-    // 判断是否可以发射飞弹
+    // 判断是否可以发射飞弹（新增数量检查）
     private bool CanFire()
     {
-        return (Time.time - lastFireTime >= cooldown) && 
-               (hookSystem != null && hookSystem.currentEnergy >= energyCost);
+        bool isCooldownOver = Time.time - lastFireTime >= cooldown;
+        bool hasEnergy = hookSystem != null && hookSystem.currentEnergy >= energyCost;
+        bool hasMissile = currentMissileCount > 0; // 检查是否有可用飞弹
+        
+        return isCooldownOver && hasEnergy && hasMissile;
     }
 
-    // 飞弹发射（包含能量调试）
+    // 飞弹发射（消耗持有数量）
     public void FireMissile()
     {
         if (missilePrefab == null)
@@ -69,16 +80,15 @@ public class MissileLauncher : MonoBehaviour
         {
             Debug.LogWarning("飞弹预制体缺少Missile组件！");
         }
+        
+        currentMissileCount--; // 减少持有数量
 
-        // 消耗能量并输出调试信息
+        // 消耗能量和飞弹数量
         if (hookSystem != null)
         {
-            float energyBefore = hookSystem.currentEnergy; // 记录消耗前的能量
+            float energyBefore = hookSystem.currentEnergy;
             hookSystem.currentEnergy -= energyCost;
-            float energyAfter = hookSystem.currentEnergy;  // 记录消耗后的能量
-
-            // 输出能量变化调试
-            Debug.Log($"飞弹发射 - 消耗能量: {energyCost} | 剩余能量: {energyAfter}");
+            Debug.Log($"飞弹发射 - 消耗能量: {energyCost} | 剩余飞弹数量: {currentMissileCount} | 剩余能量: {hookSystem.currentEnergy}");
         }
 
         lastFireTime = Time.time;
@@ -87,7 +97,7 @@ public class MissileLauncher : MonoBehaviour
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, 0.2f); // 发射点标记
+        Gizmos.DrawWireSphere(transform.position, 0.2f);
 
         if (Application.isPlaying)
         {
