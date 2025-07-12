@@ -217,6 +217,7 @@ GameObject:
   m_Component:
   - component: {fileID: 563246955}
   - component: {fileID: 563246954}
+  - component: {fileID: 563246956}
   m_Layer: 0
   m_Name: SpaceShip
   m_TagString: Untagged
@@ -242,7 +243,7 @@ MonoBehaviour:
   standbyDistance: 1
   baseRotateSpeed: 30
   baseLaunchSpeed: 10
-  baseRetrieveSpeed: 12
+  baseRetrieveSpeed: 5
   accelerateRotateSpeed: 100
   accelerateLaunchSpeed: 20
   accelerateRetrieveSpeed: 24
@@ -272,6 +273,25 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &563246956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 563246953}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 10648e5d046bbc74ebcbf14c08530e5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  missilePrefab: {fileID: 2475420307377017876, guid: ea22f5b38c3df6f49876cd48ae8748c8, type: 3}
+  launchPoint: {fileID: 563246955}
+  launchSound: {fileID: 0}
+  cooldown: 0.5
+  energyCost: 5
+  missileSpeed: 10
+  fireKey: 49
 --- !u!1 &1132675956
 GameObject:
   m_ObjectHideFlags: 0
@@ -282,6 +302,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1132675958}
   - component: {fileID: 1132675957}
+  - component: {fileID: 1132675959}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -302,7 +323,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   energyPrefab: {fileID: 7482163204306569704, guid: 9aaabe66506d4684cb098c8705eb4efa, type: 3}
-  spawnCount: 30
+  spawnCount: 20
   minDistance: 2
   spawnAreaMin: {x: -10, y: -5}
   spawnAreaMax: {x: 10, y: 5}
@@ -321,3 +342,25 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1132675959
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1132675956}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5025dd145df3f1947b5a043eb33bec62, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  obstaclePrefab: {fileID: 7323337146037400804, guid: b7a71159bff95494a8fb730f4408e8f4, type: 3}
+  launchCount: 1
+  launchInterval: 0.1
+  autoLaunch: 1
+  minLaunchSpeed: 3
+  maxLaunchSpeed: 8
+  massRange: {x: 1, y: 5}
+  maxRotationSpeed: 15
+  areaWidth: 21
+  areaHeight: 10

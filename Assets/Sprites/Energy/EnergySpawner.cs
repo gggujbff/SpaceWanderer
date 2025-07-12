@@ -28,8 +28,6 @@ public class EnergySpawner : MonoBehaviour
             }
             else
             {
-                // 如果位置无效，尝试减少数量或使用其他策略
-                Debug.LogWarning($"找不到有效位置生成第 {i+1} 个能量块");
                 i--;  // 重试当前位置
             }
         }
