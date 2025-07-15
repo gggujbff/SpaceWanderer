@@ -73,8 +73,8 @@ public class HookSystem : MonoBehaviour
     private float accelerateCDTimer = 0f; // 加速冷却计时器
 
 
-    [HideInInspector] private LineRenderer hookLine;
-    [HideInInspector] private Transform hookTip;
+    private LineRenderer hookLine;
+    private Transform hookTip;
     private HookTipCollisionHandler hookTipCollisionHandler;
 
     private void Start()
@@ -113,7 +113,7 @@ public class HookSystem : MonoBehaviour
     {
         currentState = HookState.ReadyToLaunch;
         currentDir = RotationDir.Clockwise;
-        currentLength = standbyDistance; // 待机时使用待机距离
+        currentLength = standbyDistance; 
         currentRotation = 0f;
         currentEnergy = initialEnergy;
         rotateSwitchCDTimer = 0f;
@@ -244,7 +244,7 @@ public class HookSystem : MonoBehaviour
         }
     }
 
-    private void HandleGrabbedEnergy()
+    private void HandleGrabbedEnergy() 
     {
         GameObject grabbedEnergy = hookTipCollisionHandler.GetGrabbedEnergy();
         if (grabbedEnergy != null)

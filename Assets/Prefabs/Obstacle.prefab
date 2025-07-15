@@ -141,6 +141,10 @@ MonoBehaviour:
   minSpeed: 0.5
   maxSpeed: 2
   maxRotation: 15
-  bounceFactor: 0.8
+  bounceFactor: 1
+  autoDestroyTime: 10
+  destroyOnExitScreen: 1
+  destroyDelayAfterExit: 2
   debugCollisions: 0
+  debugLifetime: 0
   currentMass: 0

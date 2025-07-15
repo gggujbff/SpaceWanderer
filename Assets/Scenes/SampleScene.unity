@@ -286,8 +286,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   missilePrefab: {fileID: 2475420307377017876, guid: ea22f5b38c3df6f49876cd48ae8748c8, type: 3}
-  launchPoint: {fileID: 563246955}
-  launchSound: {fileID: 0}
+  currentMissileCount: 5
+  maxMissileCount: 10
   cooldown: 0.5
   energyCost: 5
   missileSpeed: 10
@@ -323,10 +323,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   energyPrefab: {fileID: 7482163204306569704, guid: 9aaabe66506d4684cb098c8705eb4efa, type: 3}
-  spawnCount: 20
+  targetCount: 20
   minDistance: 2
-  spawnAreaMin: {x: -10, y: -5}
-  spawnAreaMax: {x: 10, y: 5}
+  areaWidth: 20
+  areaHeight: 10
+  centerSafeRadius: 3
 --- !u!4 &1132675958
 Transform:
   m_ObjectHideFlags: 0
@@ -362,5 +363,6 @@ MonoBehaviour:
   maxLaunchSpeed: 8
   massRange: {x: 1, y: 5}
   maxRotationSpeed: 15
-  areaWidth: 21
+  areaWidth: 20
   areaHeight: 10
+  centerSafeRadius: 3

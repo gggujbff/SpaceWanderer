@@ -3,26 +3,51 @@ using UnityEngine;
 public class Obstacle : MonoBehaviour
 {
     [Header("基础属性")]
-    [Tooltip("质量范围（kg），同时影响大小缩放")]
+    [Tooltip("障碍物的质量范围")]
     public Vector2 massRange = new Vector2(1f, 5f);
-    [Tooltip("质量与大小的缩放比例（单位：米/kg）")]
+    
+    [Tooltip("质量转换为体积大小的比例")]
     public float sizePerMass = 0.3f;
 
     [Header("移动参数")]
-    [Range(0.1f, 3f)] public float minSpeed = 0.5f;
-    [Range(1f, 5f)] public float maxSpeed = 2f;
-    [Range(-30f, 30f)] public float maxRotation = 15f;
+    [Tooltip("障碍物发射的最小速度")]
+    public float minSpeed = 0.5f;
+    
+    [Tooltip("障碍物发射的最大速度")]
+    public float maxSpeed = 2f;
+    
+    [Tooltip("障碍物的最大旋转速度")]
+    public float maxRotation = 15f;
 
     [Header("物理参数")]
-    [Range(0.1f, 1.5f)] public float bounceFactor = 0.8f;
+    [Tooltip("碰撞反弹系数：0=完全不反弹，1=完全弹性碰撞")]
+    public float bounceFactor = 1f;
 
-    [Header("调试")]
+    [Header("生命周期")]
+    [Tooltip("障碍物自动销毁的时间（秒）。设置为0表示永不自动销毁")]
+    public float autoDestroyTime = 30f;
+    
+    [Tooltip("是否在障碍物离开屏幕后自动销毁")]
+    public bool destroyOnExitScreen = true;
+    
+    [Tooltip("障碍物离开屏幕后延迟销毁的时间（秒）")]
+    public float destroyDelayAfterExit = 2f;
+
+    [Header("调试选项")]
+    [Tooltip("启用后，将在控制台打印碰撞信息并在场景中显示碰撞法线")]
     public bool debugCollisions = false;
+    
+    [Tooltip("启用后，将在控制台打印障碍物生命周期信息（生成、移动、销毁）")]
+    public bool debugLifetime = false;
 
     [HideInInspector] public float currentMass;
     private Rigidbody2D rb;
     private SpriteRenderer sr;
-
+    private bool isOffScreen = false;
+    private float offScreenTimer = 0f;
+    private float lifeTimer = 0f;
+    
+    
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -35,6 +60,76 @@ public class Obstacle : MonoBehaviour
         }
         
         InitPhysics();
+    }
+
+    void Start()
+    {
+        // 初始化生命周期计时器
+        if (autoDestroyTime > 0)
+        {
+            lifeTimer = autoDestroyTime;
+            if (debugLifetime) Debug.Log($"[{name}] 初始化，将在 {autoDestroyTime} 秒后销毁");
+        }
+    }
+
+    void Update()
+    {
+        // 生命周期计时
+        if (lifeTimer > 0)
+        {
+            lifeTimer -= Time.deltaTime;
+            if (lifeTimer <= 0)
+            {
+                if (debugLifetime) Debug.Log($"[{name}] 生命周期结束，自动销毁");
+                DestroyObstacle();
+                return;
+            }
+        }
+
+        // 屏幕外检测
+        if (destroyOnExitScreen)
+        {
+            CheckScreenBounds();
+        }
+    }
+
+    // 检查是否离开屏幕边界
+    private void CheckScreenBounds()
+    {
+        Vector3 screenPoint = Camera.main.WorldToViewportPoint(transform.position);
+        bool isCurrentlyOffScreen = 
+            screenPoint.x < -0.1f || screenPoint.x > 1.1f ||
+            screenPoint.y < -0.1f || screenPoint.y > 1.1f;
+
+        if (isCurrentlyOffScreen)
+        {
+            if (!isOffScreen)
+            {
+                // 刚离开屏幕
+                isOffScreen = true;
+                offScreenTimer = 0f;
+                if (debugLifetime) Debug.Log($"[{name}] 离开屏幕，开始计时销毁");
+            }
+            else
+            {
+                // 已经在屏幕外一段时间
+                offScreenTimer += Time.deltaTime;
+                if (offScreenTimer >= destroyDelayAfterExit)
+                {
+                    if (debugLifetime) Debug.Log($"[{name}] 在屏幕外超过 {destroyDelayAfterExit} 秒，销毁");
+                    DestroyObstacle();
+                }
+            }
+        }
+        else
+        {
+            // 回到屏幕内，重置计时器
+            if (isOffScreen && debugLifetime)
+                Debug.Log($"[{name}] 回到屏幕内，重置销毁计时器");
+                
+            isOffScreen = false;
+            offScreenTimer = 0f;
+        }
     }
 
     // 初始化质量和大小
@@ -133,5 +228,12 @@ public class Obstacle : MonoBehaviour
         Vector2 impulse = normal * impulseMagnitude;
         rb.AddForce(impulse, ForceMode2D.Impulse);
         otherRb.AddForce(-impulse, ForceMode2D.Impulse);
+    }
+
+    // 销毁障碍物（可被子类重写）
+    public virtual void DestroyObstacle()
+    {
+        // 可以添加销毁特效或音效
+        Destroy(gameObject);
     }
 }

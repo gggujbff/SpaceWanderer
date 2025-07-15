@@ -1,76 +1,146 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class EnergySpawner : MonoBehaviour
 {
     [Header("能量块设置")]
-    public GameObject energyPrefab;  // 能量块预制体
-    public int spawnCount = 10;      // 生成数量
-    public float minDistance = 2f;   // 能量块之间的最小距离
+    [Tooltip("能量块预制体")]
+    public GameObject energyPrefab;
+    
+    [Tooltip("场景中保持的能量块数量")]
+    public int targetCount = 10;
+    
+    [Tooltip("能量块之间的最小距离")]
+    public float minDistance = 2f;
     
     [Header("生成区域")]
-    public Vector2 spawnAreaMin = new Vector2(-10, -5);  // 生成区域左下角
-    public Vector2 spawnAreaMax = new Vector2(10, 5);    // 生成区域右上角
+    [Tooltip("生成区域宽度")]
+    public float areaWidth = 20f;
+    
+    [Tooltip("生成区域高度")]
+    public float areaHeight = 10f;
+    
+    [Tooltip("中心不生成区域的半径")]
+    public float centerSafeRadius = 3f;
+
+    // 存储所有生成的能量块
+    private List<GameObject> _activeEnergies = new List<GameObject>();
 
     private void Start()
     {
-        SpawnEnergies();
+        SpawnInitialEnergies();
     }
 
-    // 生成能量块
-    private void SpawnEnergies()
+    private void Update()
     {
-        for (int i = 0; i < spawnCount; i++)
+        // 清理已销毁的能量块引用
+        _activeEnergies.RemoveAll(energy => energy == null);
+        
+        // 补充能量块至目标数量
+        if (_activeEnergies.Count < targetCount)
         {
-            Vector2 randomPos = GetRandomPosition();
-            if (IsPositionValid(randomPos))
+            int needToSpawn = targetCount - _activeEnergies.Count;
+            for (int i = 0; i < needToSpawn; i++)
             {
-                SpawnEnergyAt(randomPos);
-            }
-            else
-            {
-                i--;  // 重试当前位置
+                TrySpawnEnergy();
             }
         }
     }
 
-    // 获取随机位置
+    private void SpawnInitialEnergies()
+    {
+        for (int i = 0; i < targetCount; i++)
+        {
+            TrySpawnEnergy();
+        }
+    }
+
+    private void TrySpawnEnergy()
+    {
+        Vector2 randomPos = GetRandomPosition();
+        int retryCount = 0;
+        
+        // 最多尝试10次寻找有效位置（增加重试次数适应新规则）
+        while (!IsPositionValid(randomPos) && retryCount < 10)
+        {
+            randomPos = GetRandomPosition();
+            retryCount++;
+        }
+        
+        if (IsPositionValid(randomPos))
+        {
+            GameObject energy = SpawnEnergyAt(randomPos);
+            _activeEnergies.Add(energy);
+        }
+    }
+
     private Vector2 GetRandomPosition()
     {
-        float x = Random.Range(spawnAreaMin.x, spawnAreaMax.x);
-        float y = Random.Range(spawnAreaMin.y, spawnAreaMax.y);
-        return new Vector2(x, y);
+        Vector2 pos;
+        // 循环生成位置，直到不在中心安全区内
+        do
+        {
+            float x = transform.position.x + Random.Range(-areaWidth / 2, areaWidth / 2);
+            float y = transform.position.y + Random.Range(-areaHeight / 2, areaHeight / 2);
+            pos = new Vector2(x, y);
+        } 
+        while (Vector2.Distance(pos, transform.position) < centerSafeRadius);
+        
+        return pos;
     }
 
-    // 检查位置是否有效（与已生成的能量块保持最小距离）
     private bool IsPositionValid(Vector2 position)
     {
-        // 获取场景中已有的所有能量块
-        GameObject[] existingEnergies = GameObject.FindGameObjectsWithTag("Energy");
-        
-        foreach (GameObject energy in existingEnergies)
+        // 检查是否在中心安全区内
+        if (Vector2.Distance(position, transform.position) < centerSafeRadius)
         {
-            float distance = Vector2.Distance(position, energy.transform.position);
-            if (distance < minDistance)
+            return false;
+        }
+        
+        // 检查与其他能量块的距离
+        foreach (GameObject energy in _activeEnergies)
+        {
+            if (energy != null && Vector2.Distance(position, energy.transform.position) < minDistance)
             {
-                return false;  // 距离太近，位置无效
+                return false;
             }
         }
         
-        return true;  // 位置有效
+        return true;
     }
 
-    // 在指定位置生成能量块
-    private void SpawnEnergyAt(Vector2 position)
+    private GameObject SpawnEnergyAt(Vector2 position)
     {
         GameObject energy = Instantiate(energyPrefab, position, Quaternion.identity);
-        energy.tag = "Energy";  // 确保标签正确
-        energy.name = "Energy_" + Random.Range(1000, 9999);  // 为能量块命名
+        energy.tag = "Energy";
+        energy.name = "Energy_" + Random.Range(1000, 9999);
         
-        // 可选：随机设置能量值
+        // 随机设置能量值
         Energy energyComponent = energy.GetComponent<Energy>();
         if (energyComponent != null)
         {
             energyComponent.energyAmount = Random.Range(5f, 15f);
+        }
+        
+        return energy;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        // 绘制整个生成区域
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(transform.position, new Vector3(areaWidth, areaHeight, 0.1f));
+        
+        // 绘制中心安全区（不生成区域）
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, centerSafeRadius);
+        
+        // 显示当前能量块数量
+        if (_activeEnergies != null)
+        {
+            Gizmos.color = Color.white;
+            string countText = $"能量块: {_activeEnergies.Count}/{targetCount}";
+            UnityEditor.Handles.Label(transform.position + Vector3.up * (areaHeight/2 + 0.5f), countText);
         }
     }
 }
