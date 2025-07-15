@@ -4,14 +4,10 @@ public class ObstacleLauncher : MonoBehaviour
 {
     [Header("发射器配置")]
     public GameObject obstaclePrefab;     // 障碍预制体（需挂载Obstacle）
-    public int launchCount = 1;           // 每次发射数量
     
     [Tooltip("障碍生成间隔")]
     public float launchInterval = 2f;     // 发射间隔（秒）
     
-    [Tooltip("是否自动生成")]
-    public bool autoLaunch = true;        // 是否自动发射
-
     [Header("其他参数")]
     [Tooltip("最小速度")]
     public float minLaunchSpeed = 1f;     // 最小发射速度
@@ -19,8 +15,6 @@ public class ObstacleLauncher : MonoBehaviour
     [Tooltip("最大速度")]
     public float maxLaunchSpeed = 3f;     // 最大发射速度
     
-    [Tooltip("质量范围（影响障碍的大小）")]
-    public Vector2 massRange = new Vector2(1f, 5f); // 质量范围
     
     [Tooltip("最大旋转速度")]
     public float maxRotationSpeed = 15f;  // 最大旋转速度
@@ -32,7 +26,12 @@ public class ObstacleLauncher : MonoBehaviour
     [Tooltip("中心不生成区域的半径")]
     public float centerSafeRadius = 3f;   // 中心安全区半径
 
+
+    private bool autoLaunch = true;
+    private Vector2 massRange = new Vector2(1f, 5f); // 质量范围
     private float launchTimer = 0f;
+    private int launchCount = 1;
+
 
     private void Update()
     {

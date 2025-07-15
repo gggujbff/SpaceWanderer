@@ -3,21 +3,21 @@ using UnityEngine;
 public class Missile : MonoBehaviour
 {
     [Header("飞弹属性")]
-    [Tooltip("爆炸范围半径（米）")]
+    [Tooltip("爆炸范围半径")]
     public float explosionRadius = 2f;
     
-    [Tooltip("最大飞行距离（米），超出此距离自动爆炸")]
+    [Tooltip("最大飞行距离")]
     public float maxRange = 20f;
 
-    [Header("碰撞体参数")]
-    [Tooltip("胶囊体碰撞器的长度")]
+    [Header("导弹大小")]
+    [Tooltip("导弹长度")]
     public float capsuleLength = 1f;
     
-    [Tooltip("胶囊体碰撞器的半径")]
+    [Tooltip("导弹半径")]
     public float capsuleRadius = 0.3f;
     
     [Tooltip("胶囊体方向（水平或垂直）")]
-    public CapsuleDirection2D capsuleDirection = CapsuleDirection2D.Horizontal;
+    private CapsuleDirection2D capsuleDirection = CapsuleDirection2D.Horizontal;
 
     // 组件引用
     private Rigidbody2D rb;             
