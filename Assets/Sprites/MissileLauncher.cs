@@ -3,54 +3,99 @@ using UnityEngine;
 public class MissileLauncher : MonoBehaviour
 {
     [Header("飞弹配置")]
-    [Tooltip("飞弹预制体")]
     public GameObject missilePrefab;
 
     [Header("数量管理")]
-    [Tooltip("当前持有的飞弹数量")]
-    public int currentMissileCount = 5;  // 初始持有数量
-    [Tooltip("最大可存储的飞弹数量")]
-    public int maxMissileCount = 10;     // 存储上限
+    public int currentMissileCount = 5;
+    public int maxMissileCount = 10;
 
     [Header("发射参数")]
-    [Tooltip("发射冷却时间（秒）")]
     public float cooldown = 2f;
-    [Tooltip("每次发射消耗的能量值")]
     public int energyCost = 5;
-    [Tooltip("飞弹初始速度（米/秒）")]
     public float missileSpeed = 10f;
-    [Tooltip("发射按键")]
     public KeyCode fireKey = KeyCode.Alpha1;
+    public float aimCancelTime = 3f;
 
-    private float lastFireTime = float.MinValue; // 上次发射时间
-    private HookSystem hookSystem; // 能量管理系统引用
+    [Header("Game视图瞄准反馈")]
+    public float aimTargetRadius = 10f;
+    public Color aimColor = new Color(1, 1, 0, 0.9f); // 黄色透明
+
+    private HookSystem hookSystem;
+    private float lastFireTime = float.MinValue;
+    private bool isAiming = false;
+    private float aimingTimer = 0f;
+    private Vector2 mouseWorldPos;
+
+    // GUI用的静态纹理
+    private static Texture2D _lineTex;
 
     void Awake()
     {
         hookSystem = GetComponent<HookSystem>();
-        // 确保初始数量不超过上限
         currentMissileCount = Mathf.Clamp(currentMissileCount, 0, maxMissileCount);
+
+        if (_lineTex == null)
+        {
+            _lineTex = new Texture2D(1, 1);
+            _lineTex.SetPixel(0, 0, Color.white);
+            _lineTex.Apply();
+        }
     }
 
     void Update()
     {
-        if (Input.GetKeyDown(fireKey) && CanFire())
+        HandleAimAndFire();
+
+        if (isAiming)
         {
-            FireMissile();
+            UpdateMouseWorldPosition();
         }
     }
 
-    // 判断是否可以发射飞弹（新增数量检查）
-    private bool CanFire()
+    private void HandleAimAndFire()
     {
-        bool isCooldownOver = Time.time - lastFireTime >= cooldown;
-        bool hasEnergy = hookSystem != null && hookSystem.currentEnergy >= energyCost;
-        bool hasMissile = currentMissileCount > 0; // 检查是否有可用飞弹
-        
-        return isCooldownOver && hasEnergy && hasMissile;
+        if (Input.GetKeyDown(fireKey) && !isAiming && CanStartAim())
+        {
+            isAiming = true;
+            aimingTimer = 0f;
+        }
+
+        if (isAiming)
+        {
+            aimingTimer += Time.deltaTime;
+
+            if (aimingTimer >= aimCancelTime)
+            {
+                isAiming = false;
+            }
+
+            if (Input.GetKeyUp(fireKey))
+            {
+                if (CanFire())
+                {
+                    FireMissile();
+                }
+                isAiming = false;
+            }
+        }
     }
 
-    // 飞弹发射（消耗持有数量）
+    private void UpdateMouseWorldPosition()
+    {
+        Vector3 mouseWorldPos3D = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        mouseWorldPos = new Vector2(mouseWorldPos3D.x, mouseWorldPos3D.y);
+    }
+
+    private bool CanStartAim()
+    {
+        return Time.time - lastFireTime >= cooldown && currentMissileCount > 0;
+    }
+
+    private bool CanFire()
+    {
+        return hookSystem != null && hookSystem.currentEnergy >= energyCost;
+    }
+
     public void FireMissile()
     {
         if (missilePrefab == null)
@@ -59,53 +104,68 @@ public class MissileLauncher : MonoBehaviour
             return;
         }
 
-        // 计算鼠标位置与发射方向
-        Vector3 mouseWorldPos3D = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Vector2 mouseWorldPos = new Vector2(mouseWorldPos3D.x, mouseWorldPos3D.y);
         Vector2 fireDirection = (mouseWorldPos - (Vector2)transform.position).normalized;
-
-        // 实例化并初始化飞弹
-        GameObject missile = Instantiate(
-            missilePrefab, 
-            transform.position, 
-            Quaternion.LookRotation(Vector3.forward, fireDirection)
-        );
-
+        GameObject missile = Instantiate(missilePrefab, transform.position, Quaternion.LookRotation(Vector3.forward, fireDirection));
         Missile missileComponent = missile.GetComponent<Missile>();
         if (missileComponent != null)
         {
             missileComponent.Initialize(missileSpeed, fireDirection);
         }
-        else
-        {
-            Debug.LogWarning("飞弹预制体缺少Missile组件！");
-        }
-        
-        currentMissileCount--; // 减少持有数量
 
-        // 消耗能量和飞弹数量
+        currentMissileCount--;
         if (hookSystem != null)
         {
-            float energyBefore = hookSystem.currentEnergy;
             hookSystem.currentEnergy -= energyCost;
-            Debug.Log($"飞弹发射 - 消耗能量: {energyCost} | 剩余飞弹数量: {currentMissileCount} | 剩余能量: {hookSystem.currentEnergy}");
         }
-
         lastFireTime = Time.time;
     }
-    
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.cyan;
-        Gizmos.DrawWireSphere(transform.position, 0.2f);
 
-        if (Application.isPlaying)
+    void OnGUI()
+    {
+        if (!isAiming || Camera.main == null) return;
+
+        Vector3 screenStart = Camera.main.WorldToScreenPoint(transform.position);
+        Vector3 screenEnd = Camera.main.WorldToScreenPoint(mouseWorldPos);
+
+        screenStart.y = Screen.height - screenStart.y;
+        screenEnd.y = Screen.height - screenEnd.y;
+
+        float t = aimingTimer / aimCancelTime;
+        Color currentColor = Color.Lerp(aimColor, Color.red, t);
+
+        DrawLine(screenStart, screenEnd, currentColor, 2f);
+        DrawCircle(screenEnd, aimTargetRadius, currentColor);
+    }
+
+    // ------- 内嵌绘图函数（线和圆） --------
+    private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)
+    {
+        Matrix4x4 matrix = GUI.matrix;
+        Color savedColor = GUI.color;
+
+        Vector2 delta = pointB - pointA;
+        float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+        float length = delta.magnitude;
+
+        GUI.color = color;
+        GUIUtility.RotateAroundPivot(angle, pointA);
+        GUI.DrawTexture(new Rect(pointA.x, pointA.y - width / 2, length, width), _lineTex);
+        GUI.matrix = matrix;
+        GUI.color = savedColor;
+    }
+
+    private void DrawCircle(Vector2 center, float radius, Color color)
+    {
+        int segments = 24;
+        float angleStep = 360f / segments;
+        Vector2 prevPoint = center + new Vector2(Mathf.Cos(0), Mathf.Sin(0)) * radius;
+
+        for (int i = 1; i <= segments; i++)
         {
-            Vector3 mouseWorldPos3D = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            Gizmos.DrawLine(
-                transform.position, 
-                new Vector2(mouseWorldPos3D.x, mouseWorldPos3D.y)
-            );
+            float rad = Mathf.Deg2Rad * angleStep * i;
+            Vector2 newPoint = center + new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)) * radius;
+            DrawLine(prevPoint, newPoint, color, 2f);
+            prevPoint = newPoint;
         }
     }
 }

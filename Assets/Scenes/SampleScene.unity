@@ -292,6 +292,12 @@ MonoBehaviour:
   energyCost: 5
   missileSpeed: 10
   fireKey: 49
+  aimCancelTime: 3
+  showAimLineInGame: 1
+  aimLineMaterial: {fileID: 10756, guid: 0000000000000000e000000000000000, type: 0}
+  aimLineColor: {r: 0.8747702, g: 0.9339623, b: 0.2525809, a: 0.8}
+  aimLineWidth: 0.1
+  aimTargetSize: 0.3
 --- !u!1 &1132675956
 GameObject:
   m_ObjectHideFlags: 0
