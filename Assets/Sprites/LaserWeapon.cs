@@ -7,30 +7,23 @@ public class LaserWeapon : MonoBehaviour
     public LineRenderer laserLine;
 
     [Header("发射相关")]
-    [Tooltip("发射冷却时间")]
     public float cooldown = 2f;
-    [Tooltip("消耗的能量值")]
     public int energyCost = 5;
-    [Tooltip("激光持续时长")]
     public float fireDuration = 2f;
-    [Tooltip("瞄准持续时长")]
     public float aimCancelTime = 3f;
+    public float laserOffsetDistance = 0.3f;
 
     [Header("激光外观")]
-    [Tooltip("激光宽度（长方形宽度）")]
     public float laserWidth = 0.1f;
-    [Tooltip("激光颜色")]
     public Color laserColor = new Color(1, 0, 0, 0.9f);
+    public float laserGrowSpeed = 200f;
+    public Material laserMaterial; // 新增材质字段
+
+    [Header("目标标签")]
+    public List<string> destroyableTags = new List<string> { "Obstacle" };
 
     private Color aimColor = new Color(1, 0, 0, 0.9f);
     private float aimTargetRadius = 10f;
-
-    [Header("激光起点偏移")]
-    [Tooltip("激光从角色中心沿方向偏移的距离")]
-    public float laserOffsetDistance = 0.5f;
-
-    private string[] blockingTags = {}; //阻挡激光终点的标签
-    private List<string> destroyableTags = new List<string> { "Obstacle" , "Energy"};  //激光可摧毁的标签
 
     private KeyCode fireKey = KeyCode.Alpha2;
     private HookSystem hookSystem;
@@ -60,15 +53,24 @@ public class LaserWeapon : MonoBehaviour
         UpdateLaserAppearance();
     }
 
-    private void UpdateLaserAppearance()  
+    private void UpdateLaserAppearance()
     {
         if (laserLine == null) return;
 
         laserLine.startWidth = laserWidth;
         laserLine.endWidth = laserWidth;
-        laserLine.widthCurve = AnimationCurve.Constant(0f, 1f, laserWidth);
 
-        laserLine.material = new Material(Shader.Find("Sprites/Default"));
+        if (laserMaterial != null)
+        {
+            laserLine.material = laserMaterial;
+            laserLine.textureMode = LineTextureMode.Tile;
+        }
+        else
+        {
+            Debug.LogWarning("未设置 laserMaterial 材质");
+            laserLine.material = new Material(Shader.Find("Sprites/Default"));
+        }
+
         laserLine.startColor = laserColor;
         laserLine.endColor = laserColor;
         laserLine.enabled = false;
@@ -84,7 +86,7 @@ public class LaserWeapon : MonoBehaviour
         }
     }
 
-    private void HandleAimAndFire()  //处理瞄准和射击
+    private void HandleAimAndFire()
     {
         if (Input.GetKeyDown(fireKey) && !isAiming && CanStartAim())
         {
@@ -112,24 +114,17 @@ public class LaserWeapon : MonoBehaviour
         }
     }
 
-    private void UpdateMouseWorldPosition()  //获取鼠标位置
+    private void UpdateMouseWorldPosition()
     {
         Vector3 mouseWorldPos3D = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorldPos = new Vector2(mouseWorldPos3D.x, mouseWorldPos3D.y);
     }
 
-    private bool CanStartAim()
-    {
-        return (Time.time - lastFireTime >= cooldown);
-    }
+    private bool CanStartAim() => (Time.time - lastFireTime >= cooldown);
 
-    private bool CanFire()
-    {
-        return (Time.time - lastFireTime >= cooldown) &&
-               (hookSystem != null && hookSystem.currentEnergy >= energyCost);
-    }
+    private bool CanFire() => (Time.time - lastFireTime >= cooldown) && (hookSystem != null && hookSystem.currentEnergy >= energyCost);
 
-    public void FireLaser()  //发射激光
+    public void FireLaser()
     {
         if (laserLine == null)
         {
@@ -143,58 +138,57 @@ public class LaserWeapon : MonoBehaviour
         if (hookSystem != null)
         {
             hookSystem.currentEnergy -= energyCost;
-            Debug.Log($"激光发射，当前剩余能量: {hookSystem.currentEnergy}");
+            Debug.Log("激光消耗能量: " + energyCost + ", 剩余能量: " + hookSystem.currentEnergy);
         }
 
         lastFireTime = Time.time;
     }
 
-    private System.Collections.IEnumerator KeepFiringLaser(Vector2 direction)  //持续激光
+    private IEnumerator<WaitForEndOfFrame> KeepFiringLaser(Vector2 direction)
     {
         float fireTimer = 0f;
+        float maxLength = 100f;
+        float currentLength = 0f;
+
         laserLine.enabled = true;
 
         while (fireTimer < fireDuration)
         {
-            UpdateLaserLine(direction);
-            ApplyLaserEffect(direction);
+            if (currentLength < maxLength)
+            {
+                currentLength += laserGrowSpeed * Time.deltaTime;
+                currentLength = Mathf.Min(currentLength, maxLength);
+            }
+
+            UpdateLaserLineProgressive(direction, currentLength);
+            ApplyLaserEffectWithinLength(direction, currentLength);
+
             fireTimer += Time.deltaTime;
-            yield return null;
+            yield return new WaitForEndOfFrame();
         }
 
         laserLine.enabled = false;
     }
 
-    private void UpdateLaserLine(Vector2 direction)   //更新激光线段`
+    private void UpdateLaserLineProgressive(Vector2 direction, float length)
     {
-        Vector2 origin = (Vector2)transform.position + direction * laserOffsetDistance;
-        Vector2 endPos = origin + direction * 100f;
+        Vector2 startPos = (Vector2)transform.position + direction * laserOffsetDistance;
+        Vector2 endPos = startPos + direction * length;
 
-        RaycastHit2D hit = Physics2D.Raycast(origin, direction, 100f);
-        if (hit.collider != null && IsBlockingTag(hit.collider.tag))
+        RaycastHit2D hit = Physics2D.Raycast(startPos, direction, length);
+        if (hit.collider != null && destroyableTags.Contains(hit.collider.tag))
         {
             endPos = hit.point;
         }
 
-        laserLine.SetPosition(0, origin);
+        laserLine.SetPosition(0, startPos);
         laserLine.SetPosition(1, endPos);
     }
 
-    private void ApplyLaserEffect(Vector2 direction)   //激光效果
+    private void ApplyLaserEffectWithinLength(Vector2 direction, float length)
     {
-        Vector2 origin = (Vector2)transform.position + direction * laserOffsetDistance;
-        float laserLength = 100f;
-        float width = laserWidth;
-
-        float angle = Vector2.SignedAngle(Vector2.right, direction);
-
-        RaycastHit2D[] hits = Physics2D.BoxCastAll(
-            origin + direction * laserLength / 2f,
-            new Vector2(laserLength, width),
-            angle,
-            Vector2.zero,
-            0f
-        );
+        Vector2 startPos = (Vector2)transform.position + direction * laserOffsetDistance;
+        RaycastHit2D[] hits = Physics2D.RaycastAll(startPos, direction, length);
 
         foreach (RaycastHit2D hit in hits)
         {
@@ -205,24 +199,13 @@ public class LaserWeapon : MonoBehaviour
         }
     }
 
-    private bool IsBlockingTag(string tag)  //是否阻挡激光终点
-    {
-        foreach (string blockingTag in blockingTags)
-        {
-            if (tag == blockingTag)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    void OnGUI()  //显示瞄准效果
+    void OnGUI()
     {
         if (!isAiming || Camera.main == null) return;
 
         Vector2 fireDir = (mouseWorldPos - (Vector2)transform.position).normalized;
-        Vector3 screenStart = Camera.main.WorldToScreenPoint((Vector2)transform.position + fireDir * laserOffsetDistance);
+        Vector3 worldOrigin = (Vector2)transform.position + fireDir * laserOffsetDistance;
+        Vector3 screenStart = Camera.main.WorldToScreenPoint(worldOrigin);
         Vector3 screenEnd = Camera.main.WorldToScreenPoint(mouseWorldPos);
 
         screenStart.y = Screen.height - screenStart.y;
@@ -235,7 +218,7 @@ public class LaserWeapon : MonoBehaviour
         DrawCircle(screenEnd, aimTargetRadius, currentColor);
     }
 
-    private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)  //绘制线段
+    private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)
     {
         Matrix4x4 matrix = GUI.matrix;
         Color savedColor = GUI.color;
@@ -252,7 +235,7 @@ public class LaserWeapon : MonoBehaviour
         GUI.color = savedColor;
     }
 
-    private void DrawCircle(Vector2 center, float radius, Color color)  //绘制圆
+    private void DrawCircle(Vector2 center, float radius, Color color)
     {
         const int segments = 24;
         float angleStep = 360f / segments;
@@ -267,8 +250,11 @@ public class LaserWeapon : MonoBehaviour
         }
     }
 
-    private void OnValidate()  //更新激光外观
+    private void OnValidate()
     {
-        UpdateLaserAppearance();
+        if (laserLine != null)
+        {
+            UpdateLaserAppearance();
+        }
     }
 }
