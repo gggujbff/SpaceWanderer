@@ -33,10 +33,8 @@ public class EnergySpawner : MonoBehaviour
 
     private void Update()
     {
-        // 清理已销毁的能量块引用
         _activeEnergies.RemoveAll(energy => energy == null);
         
-        // 补充能量块至目标数量
         if (_activeEnergies.Count < targetCount)
         {
             int needToSpawn = targetCount - _activeEnergies.Count;
@@ -47,7 +45,7 @@ public class EnergySpawner : MonoBehaviour
         }
     }
 
-    private void SpawnInitialEnergies()
+    private void SpawnInitialEnergies()  // 初始生成
     {
         for (int i = 0; i < targetCount; i++)
         {
@@ -55,7 +53,7 @@ public class EnergySpawner : MonoBehaviour
         }
     }
 
-    private void TrySpawnEnergy()
+    private void TrySpawnEnergy()  // 生成能量块
     {
         Vector2 randomPos = GetRandomPosition();
         int retryCount = 0;
@@ -74,7 +72,7 @@ public class EnergySpawner : MonoBehaviour
         }
     }
 
-    private Vector2 GetRandomPosition()
+    private Vector2 GetRandomPosition()  // 随机生成位置
     {
         Vector2 pos;
         // 循环生成位置，直到不在中心安全区内
@@ -89,7 +87,7 @@ public class EnergySpawner : MonoBehaviour
         return pos;
     }
 
-    private bool IsPositionValid(Vector2 position)
+    private bool IsPositionValid(Vector2 position)  // 检查位置是否有效
     {
         // 检查是否在中心安全区内
         if (Vector2.Distance(position, transform.position) < centerSafeRadius)
@@ -109,7 +107,7 @@ public class EnergySpawner : MonoBehaviour
         return true;
     }
 
-    private GameObject SpawnEnergyAt(Vector2 position)
+    private GameObject SpawnEnergyAt(Vector2 position)  // 生成能量块
     {
         GameObject energy = Instantiate(energyPrefab, position, Quaternion.identity);
         energy.tag = "Energy";
@@ -125,7 +123,7 @@ public class EnergySpawner : MonoBehaviour
         return energy;
     }
 
-    private void OnDrawGizmosSelected()
+    private void OnDrawGizmosSelected() 
     {
         // 绘制整个生成区域
         Gizmos.color = Color.yellow;

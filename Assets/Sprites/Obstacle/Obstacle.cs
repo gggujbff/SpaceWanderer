@@ -3,13 +3,9 @@ using UnityEngine;
 public class Obstacle : MonoBehaviour
 {
     [Header("基础属性")]
-    [Tooltip("障碍物的质量范围")]
+    [Tooltip("障碍物的大小范围")]
     public Vector2 massRange = new Vector2(1f, 5f);
     
-    [Tooltip("质量转换为体积大小的比例")]
-    public float sizePerMass = 0.3f;
-
-    [Header("移动参数")]
     [Tooltip("障碍物发射的最小速度")]
     public float minSpeed = 0.5f;
     
@@ -19,12 +15,12 @@ public class Obstacle : MonoBehaviour
     [Tooltip("障碍物的最大旋转速度")]
     public float maxRotation = 15f;
 
-    [Header("物理参数")]
+    [Header("物理模拟")]
     [Tooltip("碰撞反弹系数：0=完全不反弹，1=完全弹性碰撞")]
-    public float bounceFactor = 1f;
+    private float bounceFactor = 1f;
 
     [Header("生命周期")]
-    [Tooltip("障碍物自动销毁的时间（秒）。设置为0表示永不自动销毁")]
+    [Tooltip("障碍物自动销毁的时间（防止卡住等情况长时间存在占用内存）")]
     public float autoDestroyTime = 30f;
     
     [Tooltip("是否在障碍物离开屏幕后自动销毁")]
@@ -33,19 +29,16 @@ public class Obstacle : MonoBehaviour
     [Tooltip("障碍物离开屏幕后延迟销毁的时间（秒）")]
     public float destroyDelayAfterExit = 2f;
 
-    [Header("调试选项")]
-    [Tooltip("启用后，将在控制台打印碰撞信息并在场景中显示碰撞法线")]
-    public bool debugCollisions = false;
-    
-    [Tooltip("启用后，将在控制台打印障碍物生命周期信息（生成、移动、销毁）")]
-    public bool debugLifetime = false;
-
     [HideInInspector] public float currentMass;
+    private float sizePerMass = 0.3f;
     private Rigidbody2D rb;
     private SpriteRenderer sr;
     private bool isOffScreen = false;
     private float offScreenTimer = 0f;
     private float lifeTimer = 0f;
+    private bool debugLifetime = false;  // 调试生命周期 
+    public bool debugCollisions = false;  //启用后，将在控制台打印碰撞信息并在场景中显示碰撞法线
+
     
     
     void Awake()
@@ -83,15 +76,13 @@ public class Obstacle : MonoBehaviour
             }
         }
 
-        // 屏幕外检测
         if (destroyOnExitScreen)
         {
             CheckScreenBounds();
         }
     }
 
-    // 检查是否离开屏幕边界
-    private void CheckScreenBounds()
+    private void CheckScreenBounds()    // 检查是否离开屏幕边界
     {
         Vector3 screenPoint = Camera.main.WorldToViewportPoint(transform.position);
         bool isCurrentlyOffScreen = 
@@ -119,15 +110,16 @@ public class Obstacle : MonoBehaviour
         else
         {
             if (isOffScreen && debugLifetime)
+            {
                 Debug.Log($"[{name}] 回到屏幕内，重置销毁计时器");
+            }
                 
             isOffScreen = false;
             offScreenTimer = 0f;
         }
     }
 
-    // 初始化质量和大小
-    public void InitMassAndSize(float mass)
+    public void InitMassAndSize(float mass)    // 初始化质量和大小
     {
         currentMass = Mathf.Clamp(mass, massRange.x, massRange.y);
         float scale = currentMass * sizePerMass;
@@ -137,8 +129,7 @@ public class Obstacle : MonoBehaviour
         AdjustColliderSize(scale);
     }
 
-    // 调整碰撞体大小（支持多种类型）
-    private void AdjustColliderSize(float scale)
+    private void AdjustColliderSize(float scale)    // 调整碰撞体大小（支持多种类型）
     {
         // 支持CircleCollider2D
         CircleCollider2D circleCol = GetComponent<CircleCollider2D>();
@@ -171,8 +162,7 @@ public class Obstacle : MonoBehaviour
         }
     }
 
-    // 初始化物理属性
-    private void InitPhysics()
+    private void InitPhysics()    // 初始化物理属性
     {
         rb.mass = currentMass;
         rb.drag = 0;
@@ -181,15 +171,13 @@ public class Obstacle : MonoBehaviour
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
     }
 
-    // 设置初始移动
-    public void SetInitialMovement(Vector2 velocity, float angularVelocity)
+    public void SetInitialMovement(Vector2 velocity, float angularVelocity)    // 设置初始移动
     {
         rb.velocity = velocity;
         rb.angularVelocity = angularVelocity;
     }
 
-    // 碰撞处理
-    private void OnCollisionEnter2D(Collision2D collision)
+    private void OnCollisionEnter2D(Collision2D collision)    // 碰撞处理
     {
         if (debugCollisions)
         {
@@ -203,8 +191,7 @@ public class Obstacle : MonoBehaviour
         ApplySpaceCollision(collision);
     }
 
-    // 太空物理碰撞计算
-    private void ApplySpaceCollision(Collision2D collision)
+    private void ApplySpaceCollision(Collision2D collision)    // 太空物理碰撞计算
     {
         Rigidbody2D otherRb = collision.rigidbody;
         if (otherRb == null) return;
@@ -224,8 +211,7 @@ public class Obstacle : MonoBehaviour
         otherRb.AddForce(-impulse, ForceMode2D.Impulse);
     }
 
-    // 销毁障碍物
-    public virtual void DestroyObstacle()
+    public virtual void DestroyObstacle()    // 销毁障碍物
     {
         Destroy(gameObject);
     }

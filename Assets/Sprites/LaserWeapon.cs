@@ -60,7 +60,7 @@ public class LaserWeapon : MonoBehaviour
         UpdateLaserAppearance();
     }
 
-    private void UpdateLaserAppearance()
+    private void UpdateLaserAppearance()  
     {
         if (laserLine == null) return;
 
@@ -84,7 +84,7 @@ public class LaserWeapon : MonoBehaviour
         }
     }
 
-    private void HandleAimAndFire()
+    private void HandleAimAndFire()  //处理瞄准和射击
     {
         if (Input.GetKeyDown(fireKey) && !isAiming && CanStartAim())
         {
@@ -112,7 +112,7 @@ public class LaserWeapon : MonoBehaviour
         }
     }
 
-    private void UpdateMouseWorldPosition()
+    private void UpdateMouseWorldPosition()  //获取鼠标位置
     {
         Vector3 mouseWorldPos3D = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorldPos = new Vector2(mouseWorldPos3D.x, mouseWorldPos3D.y);
@@ -129,7 +129,7 @@ public class LaserWeapon : MonoBehaviour
                (hookSystem != null && hookSystem.currentEnergy >= energyCost);
     }
 
-    public void FireLaser()
+    public void FireLaser()  //发射激光
     {
         if (laserLine == null)
         {
@@ -149,7 +149,7 @@ public class LaserWeapon : MonoBehaviour
         lastFireTime = Time.time;
     }
 
-    private System.Collections.IEnumerator KeepFiringLaser(Vector2 direction)
+    private System.Collections.IEnumerator KeepFiringLaser(Vector2 direction)  //持续激光
     {
         float fireTimer = 0f;
         laserLine.enabled = true;
@@ -165,7 +165,7 @@ public class LaserWeapon : MonoBehaviour
         laserLine.enabled = false;
     }
 
-    private void UpdateLaserLine(Vector2 direction)
+    private void UpdateLaserLine(Vector2 direction)   //更新激光线段`
     {
         Vector2 origin = (Vector2)transform.position + direction * laserOffsetDistance;
         Vector2 endPos = origin + direction * 100f;
@@ -180,7 +180,7 @@ public class LaserWeapon : MonoBehaviour
         laserLine.SetPosition(1, endPos);
     }
 
-    private void ApplyLaserEffect(Vector2 direction)
+    private void ApplyLaserEffect(Vector2 direction)   //激光效果
     {
         Vector2 origin = (Vector2)transform.position + direction * laserOffsetDistance;
         float laserLength = 100f;
@@ -205,7 +205,7 @@ public class LaserWeapon : MonoBehaviour
         }
     }
 
-    private bool IsBlockingTag(string tag)
+    private bool IsBlockingTag(string tag)  //是否阻挡激光终点
     {
         foreach (string blockingTag in blockingTags)
         {
@@ -217,7 +217,7 @@ public class LaserWeapon : MonoBehaviour
         return false;
     }
 
-    void OnGUI()
+    void OnGUI()  //显示瞄准效果
     {
         if (!isAiming || Camera.main == null) return;
 
@@ -235,7 +235,7 @@ public class LaserWeapon : MonoBehaviour
         DrawCircle(screenEnd, aimTargetRadius, currentColor);
     }
 
-    private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)
+    private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)  //绘制线段
     {
         Matrix4x4 matrix = GUI.matrix;
         Color savedColor = GUI.color;
@@ -252,7 +252,7 @@ public class LaserWeapon : MonoBehaviour
         GUI.color = savedColor;
     }
 
-    private void DrawCircle(Vector2 center, float radius, Color color)
+    private void DrawCircle(Vector2 center, float radius, Color color)  //绘制圆
     {
         const int segments = 24;
         float angleStep = 360f / segments;
@@ -267,7 +267,7 @@ public class LaserWeapon : MonoBehaviour
         }
     }
 
-    private void OnValidate()
+    private void OnValidate()  //更新激光外观
     {
         UpdateLaserAppearance();
     }

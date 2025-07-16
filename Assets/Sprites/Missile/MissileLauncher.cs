@@ -62,7 +62,7 @@ public class MissileLauncher : MonoBehaviour
         }
     }
 
-    private void HandleAimAndFire()
+    private void HandleAimAndFire()    // 新增瞄准和发射接口
     {
         if (Input.GetKeyDown(fireKey) && !isAiming && CanStartAim())
         {
@@ -90,25 +90,25 @@ public class MissileLauncher : MonoBehaviour
         }
     }
 
-    private void UpdateMouseWorldPosition()
+    private void UpdateMouseWorldPosition()   // 新增获取鼠标世界坐标接口
     {
         Vector3 mouseWorldPos3D = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorldPos = new Vector2(mouseWorldPos3D.x, mouseWorldPos3D.y);
     }
 
-    private bool CanStartAim()
+    private bool CanStartAim() // 新增瞄准条件接口
     {
         return (Time.time - lastFireTime >= cooldown) && (currentMissileCount > 0);
     }
 
-    private bool CanFire()
+    private bool CanFire()  // 新增发射条件接口
     {
         return (Time.time - lastFireTime >= cooldown) &&
                (hookSystem != null && hookSystem.currentEnergy >= energyCost) &&
                (currentMissileCount > 0);
     }
 
-    public void FireMissile()
+    public void FireMissile()   // 新增发射导弹接口
     {
         if (missilePrefab == null)
         {
@@ -144,7 +144,7 @@ public class MissileLauncher : MonoBehaviour
         lastFireTime = Time.time;
     }
 
-    void OnGUI()
+    void OnGUI()   // 新增UI接口
     {
         if (!isAiming || Camera.main == null) return;
 
@@ -164,7 +164,7 @@ public class MissileLauncher : MonoBehaviour
     }
 
 
-    private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)
+    private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)  // 新增绘制线段接口
     {
         Matrix4x4 matrix = GUI.matrix;
         Color savedColor = GUI.color;
@@ -181,7 +181,7 @@ public class MissileLauncher : MonoBehaviour
         GUI.color = savedColor;
     }
 
-    private void DrawCircle(Vector2 center, float radius, Color color)
+    private void DrawCircle(Vector2 center, float radius, Color color)  // 新增绘制圆接口
     {
         const int segments = 24;
         float angleStep = 360f / segments;

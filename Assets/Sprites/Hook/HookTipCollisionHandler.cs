@@ -5,7 +5,7 @@ public class HookTipCollisionHandler : MonoBehaviour
     public HookSystem hookSystem;
     private GameObject grabbedEnergy;
 
-    private void OnTriggerEnter2D(Collider2D other)
+    private void OnTriggerEnter2D(Collider2D other)  // 当钩爪与能量碰撞时
     {
         if (other.CompareTag("Energy"))
         {
@@ -35,9 +35,9 @@ public class HookTipCollisionHandler : MonoBehaviour
         }
     }
 
-    public GameObject GetGrabbedEnergy() => grabbedEnergy;
+    public GameObject GetGrabbedEnergy() => grabbedEnergy;  // 获取被钩中的能量
 
-    public void ReleaseGrabbedEnergy()
+    public void ReleaseGrabbedEnergy()   // 释放被钩中的能量
     {
         if (grabbedEnergy != null)
         {

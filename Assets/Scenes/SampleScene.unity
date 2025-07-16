@@ -293,6 +293,7 @@ MonoBehaviour:
   energyCost: 5
   missileSpeed: 10
   aimCancelTime: 3
+  missileOffsetDistance: 0.5
   aimTargetRadius: 10
   aimColor: {r: 1, g: 1, b: 0, a: 0.9}
 --- !u!114 &563246957
@@ -312,13 +313,9 @@ MonoBehaviour:
   energyCost: 5
   fireDuration: 2
   aimCancelTime: 3
-  laserStartWidth: 1
+  laserWidth: 0.1
   laserColor: {r: 1, g: 0, b: 0, a: 0.9}
   laserOffsetDistance: 0.5
-  blockingTags: []
-  destroyableTags:
-  - Obstacle
-  - Energy
 --- !u!1 &1132675956
 GameObject:
   m_ObjectHideFlags: 0

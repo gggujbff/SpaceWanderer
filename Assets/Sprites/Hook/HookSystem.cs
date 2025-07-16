@@ -120,7 +120,7 @@ public class HookSystem : MonoBehaviour
         accelerateCDTimer = 0f;
     }
 
-    private void UpdateCDTimers(float deltaTime)
+    private void UpdateCDTimers(float deltaTime)  // 冷却计时器
     {
         if (rotateSwitchCDTimer > 0) rotateSwitchCDTimer -= deltaTime;
         if (accelerateCDTimer > 0) accelerateCDTimer -= deltaTime;
@@ -151,7 +151,7 @@ public class HookSystem : MonoBehaviour
         }
     }
 
-    private void UpdateState(float deltaTime)
+    private void UpdateState(float deltaTime)  
     {
         switch (currentState)
         {
@@ -221,8 +221,7 @@ public class HookSystem : MonoBehaviour
         }
     }
     
-    // 触发钩爪回收
-    public void RetrieveHook()
+    public void RetrieveHook()  // 触发钩爪回收
     {
         if (currentState == HookState.Launching)
         {
@@ -244,7 +243,7 @@ public class HookSystem : MonoBehaviour
         }
     }
 
-    private void HandleGrabbedEnergy() 
+    private void HandleGrabbedEnergy()   // 处理能量
     {
         GameObject grabbedEnergy = hookTipCollisionHandler.GetGrabbedEnergy();
         if (grabbedEnergy != null)
@@ -262,7 +261,7 @@ public class HookSystem : MonoBehaviour
         }
     }
 
-    public void GrabEnergy(float energyAmount)
+    public void GrabEnergy(float energyAmount)  // 能量抓取
     {
         currentEnergy = Mathf.Min(initialEnergy, currentEnergy + energyAmount);
         Debug.Log($"抓取能源，补充能量: +{energyAmount}, 剩余能量: {currentEnergy}");

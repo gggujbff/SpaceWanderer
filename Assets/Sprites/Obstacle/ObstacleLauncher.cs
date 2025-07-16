@@ -46,8 +46,7 @@ public class ObstacleLauncher : MonoBehaviour
         }
     }
 
-    // 发射障碍
-    public void LaunchObstacles()
+    public void LaunchObstacles()     // 发射障碍
     {
         for (int i = 0; i < launchCount; i++)
         {
@@ -55,8 +54,7 @@ public class ObstacleLauncher : MonoBehaviour
         }
     }
 
-    // 发射单个障碍
-    private void LaunchSingleObstacle()
+    private void LaunchSingleObstacle()     // 发射单个障碍
     {
         Vector3 spawnPos = GetRandomPosition();
 
@@ -85,8 +83,7 @@ public class ObstacleLauncher : MonoBehaviour
         spaceObstacle.SetInitialMovement(velocity, randomAngularVelocity);
     }
 
-    // 获取随机位置（避开中心安全区）
-    private Vector3 GetRandomPosition()
+    private Vector3 GetRandomPosition()      // 获取随机位置（避开中心安全区）
     {
         Vector3 pos;
         int retryCount = 0;
@@ -117,8 +114,7 @@ public class ObstacleLauncher : MonoBehaviour
         return pos;
     }
 
-    // 编辑器显示发射区域
-    private void OnDrawGizmosSelected()
+    private void OnDrawGizmosSelected()    // 编辑器显示发射区域
     {
         Gizmos.color = Color.red;
         Gizmos.DrawWireCube(transform.position, new Vector3(areaWidth, areaHeight, 0.1f));
