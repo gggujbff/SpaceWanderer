@@ -53,7 +53,6 @@ public class Obstacle : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         sr = GetComponent<SpriteRenderer>();
         
-        // 若未通过发射器初始化，则使用随机质量
         if (Mathf.Approximately(currentMass, 0))
         {
             InitMassAndSize(Random.Range(massRange.x, massRange.y));
@@ -64,7 +63,6 @@ public class Obstacle : MonoBehaviour
 
     void Start()
     {
-        // 初始化生命周期计时器
         if (autoDestroyTime > 0)
         {
             lifeTimer = autoDestroyTime;
@@ -74,7 +72,6 @@ public class Obstacle : MonoBehaviour
 
     void Update()
     {
-        // 生命周期计时
         if (lifeTimer > 0)
         {
             lifeTimer -= Time.deltaTime;
@@ -105,14 +102,12 @@ public class Obstacle : MonoBehaviour
         {
             if (!isOffScreen)
             {
-                // 刚离开屏幕
                 isOffScreen = true;
                 offScreenTimer = 0f;
                 if (debugLifetime) Debug.Log($"[{name}] 离开屏幕，开始计时销毁");
             }
             else
             {
-                // 已经在屏幕外一段时间
                 offScreenTimer += Time.deltaTime;
                 if (offScreenTimer >= destroyDelayAfterExit)
                 {
@@ -123,7 +118,6 @@ public class Obstacle : MonoBehaviour
         }
         else
         {
-            // 回到屏幕内，重置计时器
             if (isOffScreen && debugLifetime)
                 Debug.Log($"[{name}] 回到屏幕内，重置销毁计时器");
                 
@@ -230,10 +224,9 @@ public class Obstacle : MonoBehaviour
         otherRb.AddForce(-impulse, ForceMode2D.Impulse);
     }
 
-    // 销毁障碍物（可被子类重写）
+    // 销毁障碍物
     public virtual void DestroyObstacle()
     {
-        // 可以添加销毁特效或音效
         Destroy(gameObject);
     }
 }

@@ -58,13 +58,10 @@ public class ObstacleLauncher : MonoBehaviour
     // 发射单个障碍
     private void LaunchSingleObstacle()
     {
-        //随机位置（避开中心安全区）
         Vector3 spawnPos = GetRandomPosition();
 
-        //随机质量
         float randomMass = Random.Range(massRange.x, massRange.y);
 
-        //实例化障碍
         GameObject obstacle = Instantiate(obstaclePrefab, spawnPos, Quaternion.identity);
         Obstacle spaceObstacle = obstacle.GetComponent<Obstacle>();
         if (spaceObstacle == null)
@@ -73,10 +70,8 @@ public class ObstacleLauncher : MonoBehaviour
             return;
         }
 
-        //设置质量和大小
         spaceObstacle.InitMassAndSize(randomMass);
 
-        //随机方向和速度
         float randomAngle = Random.Range(0f, 360f);
         Vector2 direction = new Vector2(
             Mathf.Cos(randomAngle * Mathf.Deg2Rad),
@@ -85,10 +80,8 @@ public class ObstacleLauncher : MonoBehaviour
         float randomSpeed = Random.Range(minLaunchSpeed, maxLaunchSpeed);
         Vector2 velocity = direction * randomSpeed;
 
-        // 随机旋转速度
         float randomAngularVelocity = Random.Range(-maxRotationSpeed, maxRotationSpeed);
 
-        //应用初始移动
         spaceObstacle.SetInitialMovement(velocity, randomAngularVelocity);
     }
 
@@ -98,7 +91,6 @@ public class ObstacleLauncher : MonoBehaviour
         Vector3 pos;
         int retryCount = 0;
         
-        // 尝试生成位置，直到不在中心安全区内（最多尝试10次）
         do
         {
             pos = transform.position + new Vector3(
@@ -128,11 +120,9 @@ public class ObstacleLauncher : MonoBehaviour
     // 编辑器显示发射区域
     private void OnDrawGizmosSelected()
     {
-        // 绘制整个生成区域
         Gizmos.color = Color.red;
         Gizmos.DrawWireCube(transform.position, new Vector3(areaWidth, areaHeight, 0.1f));
         
-        // 绘制中心安全区（不生成区域）
         Gizmos.color = Color.green;
         Gizmos.DrawWireSphere(transform.position, centerSafeRadius);
     }

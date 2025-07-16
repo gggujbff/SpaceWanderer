@@ -218,6 +218,7 @@ GameObject:
   - component: {fileID: 563246955}
   - component: {fileID: 563246954}
   - component: {fileID: 563246956}
+  - component: {fileID: 563246957}
   m_Layer: 0
   m_Name: SpaceShip
   m_TagString: Untagged
@@ -294,6 +295,30 @@ MonoBehaviour:
   aimCancelTime: 3
   aimTargetRadius: 10
   aimColor: {r: 1, g: 1, b: 0, a: 0.9}
+--- !u!114 &563246957
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 563246953}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a98577bf42bd8314b8c1125df58ddfee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  laserLine: {fileID: 0}
+  cooldown: 2
+  energyCost: 5
+  fireDuration: 2
+  aimCancelTime: 3
+  laserStartWidth: 1
+  laserColor: {r: 1, g: 0, b: 0, a: 0.9}
+  laserOffsetDistance: 0.5
+  blockingTags: []
+  destroyableTags:
+  - Obstacle
+  - Energy
 --- !u!1 &1132675956
 GameObject:
   m_ObjectHideFlags: 0

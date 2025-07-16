@@ -21,6 +21,10 @@ public class MissileLauncher : MonoBehaviour
     [Tooltip("瞄准状态的时间")]
     public float aimCancelTime = 3f;
 
+    [Header("发射起点偏移")]
+    [Tooltip("导弹从角色中心沿方向偏移的距离")]
+    public float missileOffsetDistance = 0.5f;  // 新增偏移量
+
     [Header("瞄准反馈")]
     public float aimTargetRadius = 10f;
     [Tooltip("瞄准线和指示器的基础颜色")]
@@ -58,12 +62,12 @@ public class MissileLauncher : MonoBehaviour
         }
     }
 
-    private void HandleAimAndFire()    //处理瞄准和发射的核心逻辑
+    private void HandleAimAndFire()
     {
         if (Input.GetKeyDown(fireKey) && !isAiming && CanStartAim())
         {
             isAiming = true;
-            aimingTimer = 0f; 
+            aimingTimer = 0f;
         }
 
         if (isAiming)
@@ -86,25 +90,25 @@ public class MissileLauncher : MonoBehaviour
         }
     }
 
-    private void UpdateMouseWorldPosition()    //更新鼠标位置
+    private void UpdateMouseWorldPosition()
     {
         Vector3 mouseWorldPos3D = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorldPos = new Vector2(mouseWorldPos3D.x, mouseWorldPos3D.y);
     }
 
-    private bool CanStartAim()    //可以进入瞄准状态
+    private bool CanStartAim()
     {
         return (Time.time - lastFireTime >= cooldown) && (currentMissileCount > 0);
     }
 
-    private bool CanFire()    //判断是否可以发射飞弹
+    private bool CanFire()
     {
         return (Time.time - lastFireTime >= cooldown) &&
                (hookSystem != null && hookSystem.currentEnergy >= energyCost) &&
                (currentMissileCount > 0);
     }
 
-    public void FireMissile()    //发射飞弹的具体逻辑
+    public void FireMissile()
     {
         if (missilePrefab == null)
         {
@@ -113,10 +117,11 @@ public class MissileLauncher : MonoBehaviour
         }
 
         Vector2 fireDirection = (mouseWorldPos - (Vector2)transform.position).normalized;
+        Vector2 origin = (Vector2)transform.position + fireDirection * missileOffsetDistance; // 新增发射起点偏移
 
         GameObject missile = Instantiate(
-            missilePrefab, 
-            transform.position, 
+            missilePrefab,
+            origin,
             Quaternion.LookRotation(Vector3.forward, fireDirection)
         );
 
@@ -139,11 +144,13 @@ public class MissileLauncher : MonoBehaviour
         lastFireTime = Time.time;
     }
 
-    void OnGUI()    //绘制瞄准反馈
+    void OnGUI()
     {
         if (!isAiming || Camera.main == null) return;
 
-        Vector3 screenStart = Camera.main.WorldToScreenPoint(transform.position);
+        Vector2 fireDir = (mouseWorldPos - (Vector2)transform.position).normalized;
+        Vector3 worldOrigin = (Vector2)transform.position + fireDir * missileOffsetDistance;
+        Vector3 screenStart = Camera.main.WorldToScreenPoint(worldOrigin);
         Vector3 screenEnd = Camera.main.WorldToScreenPoint(mouseWorldPos);
 
         screenStart.y = Screen.height - screenStart.y;
@@ -156,7 +163,8 @@ public class MissileLauncher : MonoBehaviour
         DrawCircle(screenEnd, aimTargetRadius, currentColor);
     }
 
-    private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)    //画瞄准线
+
+    private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)
     {
         Matrix4x4 matrix = GUI.matrix;
         Color savedColor = GUI.color;
@@ -175,8 +183,8 @@ public class MissileLauncher : MonoBehaviour
 
     private void DrawCircle(Vector2 center, float radius, Color color)
     {
-        const int segments = 24; 
-        float angleStep = 360f / segments; 
+        const int segments = 24;
+        float angleStep = 360f / segments;
         Vector2 prevPoint = center + new Vector2(Mathf.Cos(0), Mathf.Sin(0)) * radius;
 
         for (int i = 1; i <= segments; i++)
