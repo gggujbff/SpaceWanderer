@@ -116,6 +116,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   energyAmount: 10
+  scoreAmount: 5
 --- !u!50 &6130202331654739227
 Rigidbody2D:
   serializedVersion: 4

@@ -1,4 +1,6 @@
 using UnityEngine;
+using TMPro;
+using UnityEngine.UI;
 
 public class HookSystem : MonoBehaviour
 {
@@ -18,7 +20,7 @@ public class HookSystem : MonoBehaviour
     public float maxLength = 10f;
     
     [Tooltip("待机时与中心的距离")]
-    public float standbyDistance = 2f; // 新增：待机距离
+    public float standbyDistance = 2f;
 
     [Tooltip("初始旋转速度")]
     public float baseRotateSpeed = 30f;
@@ -56,22 +58,46 @@ public class HookSystem : MonoBehaviour
     [Tooltip("加速")]
     public float accelerateCD = 2f;
 
-    [Header("操作延迟")]
-    [Tooltip("旋转方向切换前摇时间（秒）")]
-    public float rotateSwitchDelay = 0.2f;
+    [Header("加速度")]
+    [Tooltip("旋转加速度")]
+    public float rotationSmoothSpeed = 5f;
+    
+    [Tooltip("钩爪加速度")]
+    public float lengthSmoothSpeed = 5f;
+    
+    [Tooltip("方向切换加速度")]
+    public float switchDirSmoothSpeed = 8f;
 
+    [Header("UI显示")]
+    [Tooltip("显示能量的滑块UI")]
+    public Slider energySlider;
+    
+    [Tooltip("显示分数的文本UI（TextMeshPro）")]
+    public TextMeshProUGUI scoreText;
+    
+    [Tooltip("显示能量百分比的文本UI（TextMeshPro）")]
+    public TextMeshProUGUI energyPercentText;
 
-    [HideInInspector] public HookState currentState = HookState.ReadyToLaunch; // 当前钩爪状态
-    [HideInInspector] public RotationDir currentDir = RotationDir.Clockwise; // 当前旋转方向
-    [HideInInspector] public float currentLength = 0f; // 当前钩爪长度
-    [HideInInspector] public float currentRotation = 0f; // 当前旋转角度（度）
-    [HideInInspector] public float currentEnergy; // 当前剩余能量
-    private bool isAccelerating = false; // 是否处于加速状态
-    private float rotateSwitchTimer = 0f; // 旋转切换前摇计时器
-    private bool isSwitchingDir = false; // 是否正在切换旋转方向
-    private float rotateSwitchCDTimer = 0f; // 旋转切换冷却计时器
-    private float accelerateCDTimer = 0f; // 加速冷却计时器
+    [HideInInspector] public HookState currentState = HookState.ReadyToLaunch;
+    [HideInInspector] public RotationDir currentDir = RotationDir.Clockwise;
+    [HideInInspector] public float currentLength = 0f;
+    [HideInInspector] public float currentRotation = 0f;
+    [HideInInspector] public float currentEnergy;
 
+    [Tooltip("当前旋转速度（受加速和方向影响）")]
+    private float currentRotateSpeed;
+    
+    [Tooltip("当前发射速度（受加速影响）")]
+    private float currentLaunchSpeed;
+    
+    [Tooltip("当前回收速度（受加速影响）")]
+    private float currentRetrieveSpeed;
+
+    private int currentScore = 0;
+    private bool isAccelerating = false;
+    private float rotateSwitchCDTimer = 0f;
+    private float accelerateCDTimer = 0f;
+    private bool isSwitchingDir = false;
 
     private LineRenderer hookLine;
     private Transform hookTip;
@@ -83,6 +109,27 @@ public class HookSystem : MonoBehaviour
         Init();
         hookTipCollisionHandler = hookTip.GetComponent<HookTipCollisionHandler>();
         hookTipCollisionHandler.hookSystem = this;
+        InitUI();
+    }
+
+    private void InitUI()
+    {
+        if (energySlider != null)
+        {
+            energySlider.maxValue = initialEnergy;
+            energySlider.value = currentEnergy;
+        }
+
+        if (energyPercentText != null)
+        {
+            float percent = (currentEnergy / initialEnergy) * 100f;
+            energyPercentText.text = $"{percent:F1}%";
+        }
+
+        if (scoreText != null)
+        {
+            scoreText.text = $"分数: {currentScore}";
+        }
     }
 
     private void InitFromPrefabs()
@@ -107,26 +154,39 @@ public class HookSystem : MonoBehaviour
         HandleInput();
         UpdateState(Time.deltaTime);
         UpdateHookVisual();
+        UpdateUIDisplay();
     }
 
     public void Init()
     {
         currentState = HookState.ReadyToLaunch;
         currentDir = RotationDir.Clockwise;
-        currentLength = standbyDistance; 
+        currentLength = standbyDistance;
         currentRotation = 0f;
         currentEnergy = initialEnergy;
+        currentScore = 0;
         rotateSwitchCDTimer = 0f;
         accelerateCDTimer = 0f;
+
+        currentRotateSpeed = baseRotateSpeed;
+        currentLaunchSpeed = baseLaunchSpeed;
+        currentRetrieveSpeed = baseRetrieveSpeed;
+
+        if (energySlider != null) energySlider.value = currentEnergy;
+        if (scoreText != null) scoreText.text = $"分数: {currentScore}";
+        if (energyPercentText != null)
+        {
+            energyPercentText.text = $"{(currentEnergy / initialEnergy) * 100f:F1}%";
+        }
     }
 
-    private void UpdateCDTimers(float deltaTime)  // 冷却计时器
+    private void UpdateCDTimers(float deltaTime)
     {
         if (rotateSwitchCDTimer > 0) rotateSwitchCDTimer -= deltaTime;
         if (accelerateCDTimer > 0) accelerateCDTimer -= deltaTime;
     }
 
-    private void HandleInput() // 输入检测
+    private void HandleInput()
     {
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -151,7 +211,7 @@ public class HookSystem : MonoBehaviour
         }
     }
 
-    private void UpdateState(float deltaTime)  
+    private void UpdateState(float deltaTime)
     {
         switch (currentState)
         {
@@ -170,12 +230,19 @@ public class HookSystem : MonoBehaviour
         {
             float cost = accelerateEnergyCostPerSecond * deltaTime;
             currentEnergy = Mathf.Max(0, currentEnergy - cost);
-            Debug.Log($"加速状态持续消耗: -{cost:F2}, 剩余能量: {currentEnergy:F2}");
             if (currentEnergy <= 0) isAccelerating = false;
         }
+
+        float targetRotate = isAccelerating ? accelerateRotateSpeed : baseRotateSpeed;
+        float targetLaunch = isAccelerating ? accelerateLaunchSpeed : baseLaunchSpeed;
+        float targetRetrieve = isAccelerating ? accelerateRetrieveSpeed : baseRetrieveSpeed;
+
+        currentRotateSpeed = Mathf.Lerp(currentRotateSpeed, targetRotate * (currentDir == RotationDir.Clockwise ? 1 : -1), deltaTime * (isSwitchingDir ? switchDirSmoothSpeed : rotationSmoothSpeed));
+        currentLaunchSpeed = Mathf.Lerp(currentLaunchSpeed, targetLaunch, deltaTime * lengthSmoothSpeed);
+        currentRetrieveSpeed = Mathf.Lerp(currentRetrieveSpeed, targetRetrieve, deltaTime * lengthSmoothSpeed);
     }
 
-    private void SwitchLaunchOrRetrieve() // 切换钩爪状态
+    private void SwitchLaunchOrRetrieve()
     {
         if (currentState == HookState.ReadyToLaunch)
         {
@@ -183,67 +250,55 @@ public class HookSystem : MonoBehaviour
         }
     }
 
-    private void StartSwitchRotationDir() // 旋转方向切换
+    private void StartSwitchRotationDir()
     {
         isSwitchingDir = true;
-        rotateSwitchTimer = rotateSwitchDelay;
+        currentDir = currentDir == RotationDir.Clockwise ? RotationDir.CounterClockwise : RotationDir.Clockwise;
         currentEnergy -= rotateSwitchEnergyCost;
         rotateSwitchCDTimer = rotateSwitchCD;
-        Debug.Log($"切换方向消耗能量: -{rotateSwitchEnergyCost}, 剩余能量: {currentEnergy}");
     }
 
-    private void UpdateRotation(float deltaTime) // 更新钩爪旋转角度
+    private void UpdateRotation(float deltaTime)
     {
-        if (isSwitchingDir)
-        {
-            rotateSwitchTimer -= deltaTime;
-            if (rotateSwitchTimer <= 0)
-            {
-                currentDir = currentDir == RotationDir.Clockwise ? RotationDir.CounterClockwise : RotationDir.Clockwise;
-                isSwitchingDir = false;
-            }
-            return;
-        }
-
-        float speed = isAccelerating ? accelerateRotateSpeed : baseRotateSpeed;
-        currentRotation += (currentDir == RotationDir.Clockwise ? speed : -speed) * deltaTime;
+        currentRotation += currentRotateSpeed * deltaTime;
         currentRotation = (currentRotation % 360 + 360) % 360;
+
+        if (isSwitchingDir && Mathf.Abs(currentRotateSpeed - (currentDir == RotationDir.Clockwise ? baseRotateSpeed : -baseRotateSpeed)) < 0.5f)
+        {
+            isSwitchingDir = false;
+        }
     }
 
-    private void UpdateLaunching(float deltaTime) // 伸长钩爪
+    private void UpdateLaunching(float deltaTime)
     {
-        float speed = isAccelerating ? accelerateLaunchSpeed : baseLaunchSpeed;
-        currentLength += speed * deltaTime;
+        currentLength += currentLaunchSpeed * deltaTime;
         if (currentLength >= maxLength)
         {
             currentLength = maxLength;
             currentState = HookState.Retrieving;
         }
     }
-    
-    public void RetrieveHook()  // 触发钩爪回收
-    {
-        if (currentState == HookState.Launching)
-        {
-            currentState = HookState.Retrieving;
-            Debug.Log("开始回收钩爪！");
-        }
-    }
 
-    private void UpdateRetrieving(float deltaTime) // 缩短钩爪
+    private void UpdateRetrieving(float deltaTime)
     {
-        float speed = isAccelerating ? accelerateRetrieveSpeed : baseRetrieveSpeed;
-        currentLength -= speed * deltaTime;
-        if (currentLength <= standbyDistance) // 回收时回到待机距离
+        currentLength -= currentRetrieveSpeed * deltaTime;
+        if (currentLength <= standbyDistance)
         {
             currentLength = standbyDistance;
             currentState = HookState.ReadyToLaunch;
-            // 钩爪回收完成，处理能量
             HandleGrabbedEnergy();
         }
     }
 
-    private void HandleGrabbedEnergy()   // 处理能量
+    public void RetrieveHook()
+    {
+        if (currentState == HookState.Launching)
+        {
+            currentState = HookState.Retrieving;
+        }
+    }
+
+    private void HandleGrabbedEnergy()
     {
         GameObject grabbedEnergy = hookTipCollisionHandler.GetGrabbedEnergy();
         if (grabbedEnergy != null)
@@ -251,23 +306,21 @@ public class HookSystem : MonoBehaviour
             Energy energyComponent = grabbedEnergy.GetComponent<Energy>();
             if (energyComponent != null)
             {
-                // 增加能量
                 GrabEnergy(energyComponent.energyAmount);
+                currentScore += Mathf.RoundToInt(energyComponent.scoreAmount);
             }
-            // 销毁能量物体
+
             Destroy(grabbedEnergy);
-            // 释放抓取的能量引用
             hookTipCollisionHandler.ReleaseGrabbedEnergy();
         }
     }
 
-    public void GrabEnergy(float energyAmount)  // 能量抓取
+    public void GrabEnergy(float energyAmount)
     {
         currentEnergy = Mathf.Min(initialEnergy, currentEnergy + energyAmount);
-        Debug.Log($"抓取能源，补充能量: +{energyAmount}, 剩余能量: {currentEnergy}");
     }
 
-    private void UpdateHookVisual() // 更新绳索和钩尖位置
+    private void UpdateHookVisual()
     {
         if (hookLine == null || hookTip == null) return;
 
@@ -283,5 +336,24 @@ public class HookSystem : MonoBehaviour
 
         hookLine.SetPosition(0, transform.position);
         hookLine.SetPosition(1, hookTipPos);
+    }
+
+    private void UpdateUIDisplay()
+    {
+        if (energySlider != null)
+        {
+            energySlider.value = currentEnergy;
+        }
+
+        if (energyPercentText != null)
+        {
+            float energyPercent = (currentEnergy / initialEnergy) * 100f;
+            energyPercentText.text = $"{energyPercent:F1}%";
+        }
+
+        if (scoreText != null)
+        {
+            scoreText.text = $"分数: {currentScore}";
+        }
     }
 }
