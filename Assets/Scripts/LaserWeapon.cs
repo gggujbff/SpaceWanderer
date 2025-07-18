@@ -82,7 +82,7 @@ public class LaserWeapon : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("未设置 laserMaterial 材质");
+            Debug.LogWarning("未设置 laserMaterial 材质");  
             laserLine.material = new Material(Shader.Find("Sprites/Default"));
         }
 
