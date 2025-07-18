@@ -32,7 +32,7 @@ public class MissileLauncher : MonoBehaviour
 
     private KeyCode fireKey = KeyCode.Alpha1;
     private HookSystem hookSystem;           // 能量管理系统引用
-    private float lastFireTime = float.MinValue; // 上次发射的时间戳
+    [HideInInspector] public float lastFireTime = float.MinValue; // 上次发射的时间戳
     private bool isAiming = false;           // 是否处于瞄准状态
     private float aimingTimer = 0f;          // 瞄准状态的计时（用于超时判断）
     private Vector2 mouseWorldPos;           // 鼠标在世界空间中的位置

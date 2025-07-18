@@ -3,31 +3,46 @@ using System.Collections.Generic;
 
 public class LaserWeapon : MonoBehaviour
 {
-    [Tooltip("激光射线渲染组件")]
+    [Tooltip("激光射线渲染组件（LineRenderer）")]
     public LineRenderer laserLine;
 
     [Header("发射相关")]
+    [Tooltip("冷却时间")]
     public float cooldown = 2f;
+
+    [Tooltip("单词发射消耗的能量值")]
     public int energyCost = 5;
+
+    [Tooltip("激光持续时间")]
     public float fireDuration = 2f;
+
+    [Tooltip("瞄准状态自动取消时间")]
     public float aimCancelTime = 3f;
+
+    [Tooltip("中心偏移距离")]
     public float laserOffsetDistance = 0.3f;
 
     [Header("激光外观")]
+    [Tooltip("激光的宽度")]
     public float laserWidth = 0.1f;
-    public Color laserColor = new Color(1, 0, 0, 0.9f);
-    public float laserGrowSpeed = 200f;
-    public Material laserMaterial; // 新增材质字段
 
-    [Header("目标标签")]
-    public List<string> destroyableTags = new List<string> { "Obstacle" };
+    [Tooltip("激光的颜色")]
+    public Color laserColor = new Color(1, 0, 0, 0.9f);
+
+    [Tooltip("激光伸长的速度")]
+    public float laserGrowSpeed = 200f;   
+
+    [Tooltip("激光材质")]
+    public Material laserMaterial;
+
+    private List<string> destroyableTags = new List<string> { "Obstacle" };  //   可以被激光销毁物体的标签
 
     private Color aimColor = new Color(1, 0, 0, 0.9f);
     private float aimTargetRadius = 10f;
 
     private KeyCode fireKey = KeyCode.Alpha2;
     private HookSystem hookSystem;
-    private float lastFireTime = float.MinValue;
+    [HideInInspector] public float lastFireTime = float.MinValue;
     private bool isAiming = false;
     private float aimingTimer = 0f;
     private Vector2 mouseWorldPos;
@@ -138,7 +153,7 @@ public class LaserWeapon : MonoBehaviour
         if (hookSystem != null)
         {
             hookSystem.currentEnergy -= energyCost;
-            Debug.Log("激光消耗能量: " + energyCost + ", 剩余能量: " + hookSystem.currentEnergy);
+            //Debug.Log("激光消耗能量: " + energyCost + ", 剩余能量: " + hookSystem.currentEnergy);
         }
 
         lastFireTime = Time.time;
