@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 
 public class PauseMenuManager : MonoBehaviour
 {
-    public Image darkFilter;
+    public GameObject stopUI;
     public Button continueButton;
 
     private bool isPaused = false;
@@ -12,7 +12,7 @@ public class PauseMenuManager : MonoBehaviour
     void Start()
     {
         // 确保初始时滤镜和按钮是隐藏的
-        darkFilter.gameObject.SetActive(false);
+        stopUI.gameObject.SetActive(false);
         continueButton.gameObject.SetActive(false);
 
         // 为继续按钮添加点击事件
@@ -21,16 +21,9 @@ public class PauseMenuManager : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Escape) && !isPaused)
         {
-            if (isPaused)
-            {
-                ResumeGame();
-            }
-            else
-            {
-                PauseGame();
-            }
+            PauseGame();
         }
     }
 
@@ -40,7 +33,7 @@ public class PauseMenuManager : MonoBehaviour
         Time.timeScale = 0f; // 暂停游戏时间
 
         // 显示滤镜和按钮
-        darkFilter.gameObject.SetActive(true);
+        stopUI.gameObject.SetActive(true);
         continueButton.gameObject.SetActive(true);
 
         // 选中继续按钮
@@ -53,7 +46,7 @@ public class PauseMenuManager : MonoBehaviour
         Time.timeScale = 1f; // 恢复游戏时间
 
         // 隐藏滤镜和按钮
-        darkFilter.gameObject.SetActive(false);
+        stopUI.gameObject.SetActive(false);
         continueButton.gameObject.SetActive(false);
     }
 }

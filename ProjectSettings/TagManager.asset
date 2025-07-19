@@ -42,6 +42,9 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: FloatWindow
+    uniqueID: 2848229665
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0
