@@ -58,6 +58,9 @@ public class HookSystem : MonoBehaviour
     [Header("物理属性")]
     public float hookTipMass = 0.5f;
 
+    [Header("屏幕边界设置")]
+    public Camera mainCamera; // 需要在Inspector中赋值主相机
+
     // 内部状态变量（完全保留）
     [HideInInspector] public HookState currentState = HookState.ReadyToLaunch;
     [HideInInspector] public RotationDir currentDir = RotationDir.Clockwise;
@@ -236,6 +239,11 @@ public class HookSystem : MonoBehaviour
                 break;
             case HookState.Launching:
                 UpdateLaunching(deltaTime);
+                // 检测是否超出屏幕边界
+                if (IsOutsideScreenBounds(hookTip.position))
+                {
+                    RetrieveHook(); // 超出边界则回收
+                }
                 break;
             case HookState.Retrieving:
                 UpdateRetrieving(deltaTime);
@@ -314,7 +322,6 @@ public class HookSystem : MonoBehaviour
             currentState = HookState.Retrieving;
         }
     }
-
 
     private void UpdateHookPosition()
     {
@@ -416,4 +423,24 @@ public class HookSystem : MonoBehaviour
     }
 
     public float CurrentLaunchSpeed => currentLaunchSpeed;
-}
+
+    //检测位置是否超出屏幕边界
+    private bool IsOutsideScreenBounds(Vector3 worldPosition)
+    {
+        if (mainCamera == null)
+        {
+            mainCamera = Camera.main; // 如果未赋值则尝试获取主相机
+            if (mainCamera == null) return false; // 相机不存在则不检测
+        }
+
+        // 将世界坐标转换为屏幕坐标（0-屏幕宽高）
+        Vector3 screenPosition = mainCamera.WorldToScreenPoint(worldPosition);
+
+        // 检测是否超出屏幕边界（添加小的缓冲值避免边缘抖动）
+        float buffer = 10f;
+        return screenPosition.x < -buffer || 
+               screenPosition.x > Screen.width + buffer || 
+               screenPosition.y < -buffer || 
+               screenPosition.y > Screen.height + buffer;
+    }
+}    

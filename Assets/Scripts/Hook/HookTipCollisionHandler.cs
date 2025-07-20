@@ -50,7 +50,7 @@ public class HookTipCollisionHandler : MonoBehaviour
         {
             if (collectible != null && collectible.currentState != CollectibleObject.CollectibleState.Harvested)
             {
-                Debug.Log($"回收物 {collectible.name}，类型：{collectible.subType}");
+                Debug.Log($"回收完成：处理收集物 {collectible.name}，类型：{collectible.subType}");
                 collectible.OnHarvested();
             }
         }
