@@ -187,6 +187,8 @@ public class HookSystem : MonoBehaviour
         HandleInput();
         UpdateState(Time.deltaTime);
         UpdateHookPosition();
+        
+        UpdateUIDisplay(); // 保证UI实时刷新
     }
 
     private void LateUpdate()
@@ -301,7 +303,7 @@ public class HookSystem : MonoBehaviour
         {
             currentLength = standbyDistance;
             currentState = HookState.ReadyToLaunch;
-            hookTipCollisionHandler?.OnRetrieveComplete();
+            hookTipCollisionHandler?.OnRetrieveComplete(); // 回收完成，通知钩尖
         }
     }
 
@@ -312,6 +314,7 @@ public class HookSystem : MonoBehaviour
             currentState = HookState.Retrieving;
         }
     }
+
 
     private void UpdateHookPosition()
     {

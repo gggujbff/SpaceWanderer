@@ -1,5 +1,3 @@
-// 文件名：MapObjectEnums.cs
-// 放置在Unity项目的Scripts文件夹中（或子文件夹）
 public enum MapObjectType 
 { 
     Collectible,       // 可采集物体

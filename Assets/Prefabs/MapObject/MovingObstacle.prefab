@@ -136,12 +136,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c32e813b766f48639b4e311d0448ce9f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  objectType: 1
-  centerOfMass: {x: 0, y: 0}
   health: 5
+  damage: 5
   mass: 5
-  destroyStartMomentum: 5
+  destroyedMomentum: 5
   velocity: {x: 0, y: 0}
-  direction: {x: 0, y: 0}
-  currentState: 0
   fragmentPrefab: {fileID: 0}
+  useSineMovement: 0
+  waveAmplitude: 0.5
+  waveFrequency: 2
+  rotationSpeed: 10

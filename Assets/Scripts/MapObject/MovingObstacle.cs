@@ -4,10 +4,17 @@ public class MovingObstacle : MonoBehaviour
 {
     // 基础属性
     [Header("基础属性")]
+    
+    [Tooltip("生命值")]
     public float health = 10f;
+    
+    [Tooltip("伤害")]
     public float damage = 5f;
+    
+    [Tooltip("质量")]
     public float mass = 2f;
-    public float destroyedMomentum = 5f; // 被破坏所需的动量阈值
+    
+    public float destroyedMomentum = 5f;
     public Vector2 velocity;
     public GameObject fragmentPrefab;
 

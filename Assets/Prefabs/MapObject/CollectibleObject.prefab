@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 3585565496689932609}
   m_Layer: 0
   m_Name: CollectibleObject
-  m_TagString: Energy
+  m_TagString: Collectible
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -97,7 +97,7 @@ CircleCollider2D:
   m_Enabled: 1
   m_Density: 1
   m_Material: {fileID: 0}
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
   m_Offset: {x: 0, y: 0}
@@ -136,15 +136,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b89975505ea4c6da708becfa2699d52, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  objectType: 0
-  centerOfMass: {x: 0, y: 0}
   subType: 1
   scoreValue: 10
   energyValue: 10
-  propTag: 
+  propTag: Energy
   mass: 1
-  destroyedMomentum: 1000
+  destroyedMomentum: 1
   velocity: {x: 0, y: 0}
-  direction: {x: 0, y: 0}
   currentState: 0
-  destroyEffectPrefab: {fileID: 0}
