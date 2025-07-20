@@ -1,0 +1,13 @@
+fileFormatVersion: 2
+guid: 445ef7dba0758194eb545f51f6501e5b
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - hookTipPrefab: {instanceID: 0}
+  - hookLinePrefab: {instanceID: 0}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

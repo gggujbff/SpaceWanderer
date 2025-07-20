@@ -12,6 +12,14 @@
 /[Uu]ser[Ss]ettings/
 *.log
 
+# ================
+# JetBrains IDE   <-- 添加这部分
+# ================
+.idea/
+*.iml
+*.ipr
+*.iws
+
 # MemoryCaptures can get excessive in size.
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
