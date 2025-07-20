@@ -8,11 +8,13 @@ TagManager:
   - Enemy
   - 'Missile '
   - Obstacle
+  - Collectible
+  - Hook
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Foreground
   - Water
   - UI
   - 

@@ -12,9 +12,9 @@ GameObject:
   - component: {fileID: 6402200758451256320}
   - component: {fileID: 6108880629470916502}
   - component: {fileID: 7445895587811154752}
-  - component: {fileID: 2764747340550216716}
+  - component: {fileID: 509611851}
   m_Layer: 0
-  m_Name: Obstacle
+  m_Name: MovingObstacle
   m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -124,7 +124,7 @@ CircleCollider2D:
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
   m_Radius: 0.5
---- !u!114 &2764747340550216716
+--- !u!114 &509611851
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -133,18 +133,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 7323337146037400804}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0ad2a62ed36c9be4f8f4c4b1aa72b668, type: 3}
+  m_Script: {fileID: 11500000, guid: c32e813b766f48639b4e311d0448ce9f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  massRange: {x: 1, y: 5}
-  sizePerMass: 0.3
-  minSpeed: 0.5
-  maxSpeed: 2
-  maxRotation: 15
-  bounceFactor: 1
-  autoDestroyTime: 10
-  destroyOnExitScreen: 1
-  destroyDelayAfterExit: 2
-  debugCollisions: 0
-  debugLifetime: 0
-  currentMass: 0
+  objectType: 1
+  centerOfMass: {x: 0, y: 0}
+  health: 5
+  mass: 5
+  destroyStartMomentum: 5
+  velocity: {x: 0, y: 0}
+  direction: {x: 0, y: 0}
+  currentState: 0
+  fragmentPrefab: {fileID: 0}

@@ -3,46 +3,53 @@ using UnityEngine;
 public class HookTipCollisionHandler : MonoBehaviour
 {
     public HookSystem hookSystem;
-    private GameObject grabbedEnergy;
 
-    private void OnTriggerEnter2D(Collider2D other)  // 当钩爪与能量碰撞时
+    private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.CompareTag("Energy"))
+        // 处理与可采集物体的碰撞
+        if (other.CompareTag("Collectible"))
         {
-            Debug.Log("钩中能量物体！");
-            grabbedEnergy = other.gameObject;
-            
-            // 禁用能量物体的物理组件，防止干扰
-            Rigidbody2D rb = grabbedEnergy.GetComponent<Rigidbody2D>();
-            if (rb != null)
+            if (other.TryGetComponent<CollectibleObject>(out var collectible))
             {
-                rb.isKinematic = true;
-                rb.velocity = Vector2.zero;
+                collectible.OnHookCollision(hookSystem);
+                
+                if (collectible.OnGrabbed(this))
+                {
+                    hookSystem.RetrieveHook();
+                }
             }
-            
-            Collider2D col = grabbedEnergy.GetComponent<Collider2D>();
-            if (col != null)
-            {
-                col.enabled = false;
-            }
-            
-            // 将能量物体设为钩爪的子对象，使其跟随移动
-            grabbedEnergy.transform.SetParent(transform);
-            grabbedEnergy.transform.localPosition = Vector3.zero;
-            
-            // 立即开始回收钩爪
-            hookSystem.RetrieveHook();
         }
     }
 
-    public GameObject GetGrabbedEnergy() => grabbedEnergy;  // 获取被钩中的能量
-
-    public void ReleaseGrabbedEnergy()   // 释放被钩中的能量
+    private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (grabbedEnergy != null)
+        // 处理与障碍物的碰撞
+        if (collision.gameObject.CompareTag("Obstacle"))
         {
-            grabbedEnergy.transform.SetParent(null);
-            grabbedEnergy = null;
+            if (collision.gameObject.TryGetComponent<MovingObstacle>(out var obstacle))
+            {
+                float hookMomentum = hookSystem.CurrentLaunchSpeed * hookSystem.hookTipMass;
+                
+                // 障碍物受到伤害
+                obstacle.TakeDamage(hookMomentum);
+                
+                // 根据碰撞力度决定是否回收钩爪
+                if (hookMomentum >= obstacle.destroyedMomentum * 0.7f)
+                {
+                    hookSystem.RetrieveHook();
+                }
+            }
+        }
+    }
+
+    // 当钩爪回收完成时调用
+    public void OnRetrieveComplete()
+    {
+        // 查找所有已抓取的物体并处理收获
+        CollectibleObject[] collectibles = GetComponentsInChildren<CollectibleObject>();
+        foreach (var collectible in collectibles)
+        {
+            collectible.OnHarvested();
         }
     }
 }
