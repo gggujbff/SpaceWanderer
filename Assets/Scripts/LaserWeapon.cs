@@ -77,19 +77,24 @@ public class LaserWeapon : MonoBehaviour
 
         if (laserMaterial != null)
         {
-            laserLine.material = laserMaterial;
+            laserLine.material = new Material(laserMaterial); // 用克隆材质
             laserLine.textureMode = LineTextureMode.Tile;
         }
         else
         {
-            Debug.LogWarning("未设置 laserMaterial 材质");  
-            laserLine.material = new Material(Shader.Find("Sprites/Default"));
+            Debug.LogWarning("未设置 laserMaterial 材质");
+            laserLine.material = new Material(Shader.Find("Sprites/Default")); // 使用透明支持 Shader
         }
 
         laserLine.startColor = laserColor;
         laserLine.endColor = laserColor;
+
+        laserLine.sortingLayerName = "Default"; // 或创建一个新的 Layer 如 "Laser"
+        laserLine.sortingOrder = 100;
+
         laserLine.enabled = false;
     }
+
 
     void Update()
     {
