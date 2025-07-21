@@ -138,9 +138,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   subType: 1
   scoreValue: 10
-  energyValue: 10
   propTag: Energy
-  mass: 1
+  mass: 2
   destroyedMomentum: 1
   velocity: {x: 0, y: 0}
   currentState: 0

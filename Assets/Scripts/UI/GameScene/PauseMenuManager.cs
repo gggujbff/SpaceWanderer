@@ -16,7 +16,6 @@ public class PauseMenuManager : MonoBehaviour
         continueButton.gameObject.SetActive(false);
         continueButton.onClick.AddListener(ResumeGame);
         
-        // 注册悬浮窗打开/关闭事件
         if (settingsButtonHandler != null)
         {
             settingsButtonHandler.OnWindowOpened += HandleWindowOpened;
@@ -59,14 +58,12 @@ public class PauseMenuManager : MonoBehaviour
     // 处理悬浮窗打开事件
     private void HandleWindowOpened()
     {
-        // 当悬浮窗打开时，取消选中所有UI元素，防止ESC触发按钮事件
         EventSystem.current.SetSelectedGameObject(null);
     }
 
     // 处理悬浮窗关闭事件
     private void HandleWindowClosed()
     {
-        // 当悬浮窗关闭时，重新选中继续按钮
         if (isPaused)
         {
             EventSystem.current.SetSelectedGameObject(continueButton.gameObject);
@@ -75,7 +72,6 @@ public class PauseMenuManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        // 注销事件监听
         if (settingsButtonHandler != null)
         {
             settingsButtonHandler.OnWindowOpened -= HandleWindowOpened;

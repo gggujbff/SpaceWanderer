@@ -58,52 +58,38 @@ public class HomePageUIManager : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
-            //DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            //Destroy(gameObject);
         }
     }
 
     private void Start()
     {
-        // 初始化按钮事件
         InitButtonEvents();
 
-        // 根据从游戏场景返回的标志显示对应面板
         ShowTargetPanel();
 
-        // 重置标志
         TargetPanelOnLoad = ExitButtonHandler.TargetPanel.StartPanel;
     }
 
 
     #region 初始化方法
-    // 绑定所有按钮事件
     private void InitButtonEvents()
     {
-        // 检查按钮引用是否为空
         CheckButtonReferences();
 
-        // StartPanel 按钮
         startButton.onClick.AddListener(OnClick_Start);
         settingButton.onClick.AddListener(OnClick_Setting);
         quitButton.onClick.AddListener(OnClick_Quit);
 
-        // ThemeSelectPanel 按钮
         theme1Button.onClick.AddListener(OnClick_Theme1);
         theme2Button.onClick.AddListener(OnClick_Theme2);
         theme3Button.onClick.AddListener(OnClick_Theme3);
         backToStartButton.onClick.AddListener(OnClick_BackToStart);
 
-        // LevelSelectPanel 按钮
         backToThemeButton_1.onClick.AddListener(OnClick_BackToTheme);
         backToThemeButton_2.onClick.AddListener(OnClick_BackToTheme);
         backToThemeButton_3.onClick.AddListener(OnClick_BackToTheme);
     }
 
-    // 检查按钮引用，避免空引用错误
     private void CheckButtonReferences()
     {
         if (startButton == null) Debug.LogError("HomePageUIManager: startButton 未赋值！");
@@ -125,7 +111,6 @@ public class HomePageUIManager : MonoBehaviour
 
 
     #region 面板切换方法
-    // 只显示目标面板，隐藏其他所有面板
     private void ShowOnly(GameObject targetPanel)
     {
         startPanel.SetActive(targetPanel == startPanel);
@@ -134,14 +119,12 @@ public class HomePageUIManager : MonoBehaviour
         levelSelectPanel_Theme2.SetActive(targetPanel == levelSelectPanel_Theme2);
         levelSelectPanel_Theme3.SetActive(targetPanel == levelSelectPanel_Theme3);
 
-        // 切换面板时关闭悬浮窗
         if (currentSettingWindow != null)
         {
             CloseSettingWindow();
         }
     }
 
-    // 根据从游戏场景返回的标志显示对应面板
     private void ShowTargetPanel()
     {
         switch (TargetPanelOnLoad)
@@ -191,26 +174,20 @@ public class HomePageUIManager : MonoBehaviour
     {
         if (currentSettingWindow != null) return;
 
-        // 创建悬浮窗
         currentSettingWindow = Instantiate(settingWindowPrefab);
         currentSettingWindow.name = $"{settingWindowPrefab.name}_Instance";
 
-        // 设置Canvas和层级
         SetupWindowCanvas();
 
-        // 悬浮窗居中
         CenterWindow();
 
-        // 创建遮罩层
         if (useOverlay)
         {
             CreateOverlay();
         }
 
-        // 禁用其他UI
         DisableOtherUI();
 
-        // 绑定悬浮窗内部的关闭按钮
         BindInnerCloseButton();
     }
 
@@ -288,7 +265,6 @@ public class HomePageUIManager : MonoBehaviour
     {
         Button closeButton = null;
 
-        // 先尝试按名称查找
         if (!string.IsNullOrEmpty(closeButtonName))
         {
             Transform closeBtnTransform = currentSettingWindow.transform.Find(closeButtonName);
@@ -298,7 +274,6 @@ public class HomePageUIManager : MonoBehaviour
             }
         }
 
-        // 如果没找到，再查找所有子对象中的Button
         if (closeButton == null)
         {
             closeButton = currentSettingWindow.GetComponentInChildren<Button>(true);
@@ -320,14 +295,12 @@ public class HomePageUIManager : MonoBehaviour
     {
         if (currentSettingWindow == null) return;
 
-        // 恢复被禁用的UI
         foreach (Selectable ui in disabledUIElements)
         {
             if (ui != null) ui.interactable = true;
         }
         disabledUIElements.Clear();
 
-        // 销毁悬浮窗
         Destroy(currentSettingWindow);
         currentSettingWindow = null;
         overlay = null;

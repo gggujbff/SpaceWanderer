@@ -1550,21 +1550,24 @@ MonoBehaviour:
   standbyDistance: 1
   baseRotateSpeed: 30
   baseLaunchSpeed: 10
-  baseRetrieveSpeed: 5
+  baseRetrieveSpeed: 10
   accelerateRotateSpeed: 100
   accelerateLaunchSpeed: 20
   accelerateRetrieveSpeed: 24
-  initialEnergy: 100
-  rotateSwitchEnergyCost: 5
-  accelerateEnergyCostPerSecond: 5
+  initialTemperature: 0
+  overheatThreshold: 100
+  maxOverheatTime: 5
+  rotateSwitchHeat: 5
+  accelerateHeatPerSecond: 8
+  coolingRate: 10
   rotateSwitchCD: 2
   accelerateCD: 2
   rotationSmoothSpeed: 5
   lengthSmoothSpeed: 5
   switchDirSmoothSpeed: 8
-  energySlider: {fileID: 1151578400}
+  temperatureSlider: {fileID: 1151578400}
   scoreText: {fileID: 1611905820}
-  energyPercentText: {fileID: 2056451325}
+  temperaturePercentText: {fileID: 2056451325}
   healthSlider: {fileID: 389614669}
   healthPercentText: {fileID: 1810215071}
   maxHealth: 100
@@ -1574,10 +1577,16 @@ MonoBehaviour:
   currentDir: 0
   currentLength: 0
   currentRotation: 0
-  currentEnergy: 0
+  currentTemperature: 0
   currentHealth: 0
+  currentOverheatState: 1
+  currentOverheatTime: 0
   currentLaunchSpeed: 0
   currentRetrieveSpeed: 0
+  k: 0.1
+  a: 1
+  c: 1
+  ambientTemperature: 0
 --- !u!4 &563246955
 Transform:
   m_ObjectHideFlags: 0
@@ -1609,12 +1618,13 @@ MonoBehaviour:
   currentMissileCount: 5
   maxMissileCount: 10
   cooldown: 10
-  energyCost: 5
   missileSpeed: 10
   aimCancelTime: 3
   missileOffsetDistance: 0.5
   aimTargetRadius: 10
   aimColor: {r: 1, g: 1, b: 0, a: 0.9}
+  launchHeat: 20
+  temperatureSlider: {fileID: 0}
   lastFireTime: -3.4028235e+38
 --- !u!114 &563246957
 MonoBehaviour:
@@ -1630,7 +1640,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   laserLine: {fileID: 1132675963}
   cooldown: 10
-  energyCost: 5
   fireDuration: 2
   aimCancelTime: 3
   laserOffsetDistance: 0.5
@@ -1638,6 +1647,7 @@ MonoBehaviour:
   laserColor: {r: 1, g: 0, b: 0, a: 0.9}
   laserGrowSpeed: 200
   laserMaterial: {fileID: 2100000, guid: 7d078a1e2b2f17a45845165a3d24a1c5, type: 2}
+  fireHeat: 30
   lastFireTime: -3.4028235e+38
 --- !u!120 &563246958
 LineRenderer:
@@ -1759,10 +1769,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c05fa04bbd55dea43b62d2c1f129a3ca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  initialEnergyCost: 10
-  energyDrainPerSecond: 5
   cooldownDuration: 5
   shieldPrefab: {fileID: 6768198574966206667, guid: c7f8744a5dcceec40925622aa66690c6, type: 3}
+  activateHeat: 20
+  heatPerSecond: 5
 --- !u!50 &563246960
 Rigidbody2D:
   serializedVersion: 4
@@ -2181,6 +2191,92 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!21 &750963481
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: LaserMaterial
+  m_Shader: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _AlphaTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailAlbedoMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailMask:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DetailNormalMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _EmissionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 10300, guid: 0000000000000000f000000000000000, type: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MetallicGlossMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _OcclusionMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _ParallaxMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - PixelSnap: 0
+    - _BumpScale: 1
+    - _Cutoff: 0.5
+    - _DetailNormalMapScale: 1
+    - _DstBlend: 0
+    - _EnableExternalAlpha: 0
+    - _GlossMapScale: 1
+    - _Glossiness: 0.5
+    - _GlossyReflections: 1
+    - _Metallic: 0
+    - _Mode: 0
+    - _OcclusionStrength: 1
+    - _Parallax: 0.02
+    - _SmoothnessTextureChannel: 0
+    - _SpecularHighlights: 1
+    - _SrcBlend: 1
+    - _UVSec: 0
+    - _ZWrite: 1
+    m_Colors:
+    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _Flip: {r: 1, g: 1, b: 1, a: 1}
+    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
+  m_BuildTextureStacks: []
 --- !u!114 &778530225 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 2117810285544579234, guid: 7829e70f28654ab4e85c28c0add0526a, type: 3}
@@ -2879,15 +2975,15 @@ MonoBehaviour:
     y: -5
     width: 15
     height: 10
-  maxObjects: 15
+  maxObjects: 100
   autoSpawn: 1
   showSpawnArea: 1
   areaColor: {r: 0, g: 1, b: 0, a: 1}
   spawnableItems:
   - prefab: {fileID: 3585565496689932610, guid: ca0a2448024af804990ca528c3339af8, type: 3}
-    spawnFrequency: 0.5
+    spawnFrequency: 2
   - prefab: {fileID: 7323337146037400804, guid: 6f8e468921b0d4f46ace682faf4acfd3, type: 3}
-    spawnFrequency: 0.5
+    spawnFrequency: 0.1
 --- !u!120 &1132675963
 LineRenderer:
   m_ObjectHideFlags: 0
@@ -2908,7 +3004,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 1982643766}
+  - {fileID: 750963481}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -5275,92 +5371,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1973118289}
   m_CullTransparentMesh: 1
---- !u!21 &1982643766
-Material:
-  serializedVersion: 8
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: LaserMaterial
-  m_Shader: {fileID: 10752, guid: 0000000000000000f000000000000000, type: 0}
-  m_ValidKeywords: []
-  m_InvalidKeywords: []
-  m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
-  m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
-  m_SavedProperties:
-    serializedVersion: 3
-    m_TexEnvs:
-    - _AlphaTex:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _BumpMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _DetailAlbedoMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _DetailMask:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _DetailNormalMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _EmissionMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _MainTex:
-        m_Texture: {fileID: 10300, guid: 0000000000000000f000000000000000, type: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _MetallicGlossMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _OcclusionMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    - _ParallaxMap:
-        m_Texture: {fileID: 0}
-        m_Scale: {x: 1, y: 1}
-        m_Offset: {x: 0, y: 0}
-    m_Ints: []
-    m_Floats:
-    - PixelSnap: 0
-    - _BumpScale: 1
-    - _Cutoff: 0.5
-    - _DetailNormalMapScale: 1
-    - _DstBlend: 0
-    - _EnableExternalAlpha: 0
-    - _GlossMapScale: 1
-    - _Glossiness: 0.5
-    - _GlossyReflections: 1
-    - _Metallic: 0
-    - _Mode: 0
-    - _OcclusionStrength: 1
-    - _Parallax: 0.02
-    - _SmoothnessTextureChannel: 0
-    - _SpecularHighlights: 1
-    - _SrcBlend: 1
-    - _UVSec: 0
-    - _ZWrite: 1
-    m_Colors:
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _Flip: {r: 1, g: 1, b: 1, a: 1}
-    - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
-  m_BuildTextureStacks: []
 --- !u!1 &2003024512
 GameObject:
   m_ObjectHideFlags: 0
@@ -5746,6 +5756,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2056451323, guid: 7829e70f28654ab4e85c28c0add0526a, type: 3}
+      propertyPath: m_Name
+      value: temperaturePercentText
+      objectReference: {fileID: 0}
+    - target: {fileID: 2117810283761728525, guid: 7829e70f28654ab4e85c28c0add0526a, type: 3}
+      propertyPath: m_Name
+      value: temperatureSlider
+      objectReference: {fileID: 0}
     - target: {fileID: 2117810284554329177, guid: 7829e70f28654ab4e85c28c0add0526a, type: 3}
       propertyPath: m_Name
       value: GameUI

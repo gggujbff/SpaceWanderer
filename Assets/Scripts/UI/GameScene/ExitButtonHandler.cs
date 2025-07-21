@@ -29,7 +29,6 @@ public class ExitButtonHandler : MonoBehaviour
     {
         Time.timeScale = 1f;
 
-        // 记录目标面板
         HomePageUIManager.TargetPanelOnLoad = targetPanel;
 
         if (!string.IsNullOrEmpty(menuSceneName))
