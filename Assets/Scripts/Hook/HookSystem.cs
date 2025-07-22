@@ -27,6 +27,7 @@ public class HookSystem : MonoBehaviour
     public float baseRotateSpeed = 30f;
     public float baseLaunchSpeed = 10f;
     public float baseRetrieveSpeed = 10f;
+    
 
     [Header("加速属性")]
     public float accelerateRotateSpeed = 100f;
@@ -74,6 +75,7 @@ public class HookSystem : MonoBehaviour
     [HideInInspector] public float currentHealth;
     [HideInInspector] public OverheatState currentOverheatState = OverheatState.Normal; // 当前过热状态
     [HideInInspector] public float currentOverheatTime = 0f; // 当前过热时间
+    [HideInInspector] public float spaceShipVelocity = 0f; // 飞船速度
 
     private float currentRotateSpeed;
     public float currentLaunchSpeed;
@@ -120,7 +122,6 @@ public class HookSystem : MonoBehaviour
         InitUI();
     }
 
-    // 初始化绳索（仅优化渲染可见性，不改变逻辑）
     private void SetupRope()
     {
         ropeRenderer = gameObject.GetComponent<LineRenderer>() ?? gameObject.AddComponent<LineRenderer>();
@@ -507,7 +508,6 @@ public class HookSystem : MonoBehaviour
 
     public float CurrentLaunchSpeed => currentLaunchSpeed;
 
-    //检测位置是否超出屏幕边界
     private bool IsOutsideScreenBounds(Vector3 worldPosition)
     {
         if (mainCamera == null)
@@ -530,13 +530,11 @@ public class HookSystem : MonoBehaviour
         currentTemperature += heat;
     }
 
-    // 新增方法：添加钩中物体的质量
     public void AddGrabbedMass(float mass)
     {
         grabbedMass += mass;
     }
 
-    // 新增方法：重置钩中物体的质量
     public void ResetGrabbedMass()
     {
         grabbedMass = 0f;
