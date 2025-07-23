@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 public class LaserWeapon : MonoBehaviour
 {
@@ -9,9 +10,6 @@ public class LaserWeapon : MonoBehaviour
     [Header("发射相关")]
     [Tooltip("冷却时间")]
     public float cooldown = 2f;
-
-    [Tooltip("单词发射消耗的能量值")]
-    public int energyCost = 5;
 
     [Tooltip("激光持续时间")]
     public float fireDuration = 2f;
@@ -35,7 +33,10 @@ public class LaserWeapon : MonoBehaviour
     [Tooltip("激光材质")]
     public Material laserMaterial;
 
-    private List<string> destroyableTags = new List<string> { "Obstacle" };  //   可以被激光销毁物体的标签
+    [Header("过热参数")]
+    public float fireHeat = 30f; // 发射一次激光产生的热量
+
+    private List<string> destroyableTags = new List<string> { "Obstacle" };
 
     private Color aimColor = new Color(1, 0, 0, 0.9f);
     private float aimTargetRadius = 10f;
@@ -77,19 +78,24 @@ public class LaserWeapon : MonoBehaviour
 
         if (laserMaterial != null)
         {
-            laserLine.material = laserMaterial;
+            laserLine.material = new Material(laserMaterial); 
             laserLine.textureMode = LineTextureMode.Tile;
         }
         else
         {
-            Debug.LogWarning("未设置 laserMaterial 材质");  
-            laserLine.material = new Material(Shader.Find("Sprites/Default"));
+            Debug.LogWarning("未设置 laserMaterial 材质");
+            laserLine.material = new Material(Shader.Find("Sprites/Default")); 
         }
 
         laserLine.startColor = laserColor;
         laserLine.endColor = laserColor;
+
+        laserLine.sortingLayerName = "Default";
+        laserLine.sortingOrder = 100;
+
         laserLine.enabled = false;
     }
+
 
     void Update()
     {
@@ -135,28 +141,30 @@ public class LaserWeapon : MonoBehaviour
         mouseWorldPos = new Vector2(mouseWorldPos3D.x, mouseWorldPos3D.y);
     }
 
-    private bool CanStartAim() => (Time.time - lastFireTime >= cooldown);
+    private bool CanStartAim()
+    {
+        return (Time.time - lastFireTime >= cooldown) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
+    }
 
-    private bool CanFire() => (Time.time - lastFireTime >= cooldown) && (hookSystem != null && hookSystem.currentEnergy >= energyCost);
+    private bool CanFire()
+    {
+        return (Time.time - lastFireTime >= cooldown) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
+    }
 
     public void FireLaser()
     {
         if (laserLine == null)
         {
-            Debug.LogError("未正确初始化 LineRenderer！无法显示激光");
             return;
         }
 
         Vector2 fireDirection = (mouseWorldPos - (Vector2)transform.position).normalized;
         StartCoroutine(KeepFiringLaser(fireDirection));
 
-        if (hookSystem != null)
-        {
-            hookSystem.currentEnergy -= energyCost;
-            //Debug.Log("激光消耗能量: " + energyCost + ", 剩余能量: " + hookSystem.currentEnergy);
-        }
-
         lastFireTime = Time.time;
+
+        // 调用 HookSystem 的方法增加温度
+        hookSystem.AddHeat(fireHeat);
     }
 
     private IEnumerator<WaitForEndOfFrame> KeepFiringLaser(Vector2 direction)

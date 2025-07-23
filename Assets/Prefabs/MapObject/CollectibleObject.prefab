@@ -111,11 +111,11 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3585565496689932610}
-  m_BodyType: 1
+  m_BodyType: 0
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
-  m_Mass: 1
+  m_Mass: 0.0001
   m_LinearDrag: 0
   m_AngularDrag: 0.05
   m_GravityScale: 1
@@ -138,9 +138,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   subType: 1
   scoreValue: 10
-  energyValue: 10
   propTag: Energy
-  mass: 1
-  destroyedMomentum: 1
-  velocity: {x: 0, y: 0}
+  mass: 2
+  destroyedMomentum: 99999
+  velocity: {x: 1, y: 1}
   currentState: 0

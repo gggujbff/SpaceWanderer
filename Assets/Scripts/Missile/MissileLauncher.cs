@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class MissileLauncher : MonoBehaviour
 {
@@ -14,8 +15,6 @@ public class MissileLauncher : MonoBehaviour
     [Header("发射参数")]
     [Tooltip("发射冷却时间")]
     public float cooldown = 2f;
-    [Tooltip("能量消耗值")]
-    public int energyCost = 5;
     [Tooltip("飞行速度")]
     public float missileSpeed = 10f;
     [Tooltip("瞄准状态的时间")]
@@ -29,6 +28,12 @@ public class MissileLauncher : MonoBehaviour
     public float aimTargetRadius = 10f;
     [Tooltip("瞄准线和指示器的基础颜色")]
     public Color aimColor = new Color(1, 1, 0, 0.9f); // 黄色透明
+
+    [Header("过热参数")]
+    public float launchHeat = 20f; // 发射一次导弹产生的热量
+
+    [Header("UI显示")]
+    public Slider temperatureSlider;
 
     private KeyCode fireKey = KeyCode.Alpha1;
     private HookSystem hookSystem;           // 能量管理系统引用
@@ -60,6 +65,8 @@ public class MissileLauncher : MonoBehaviour
         {
             UpdateMouseWorldPosition();
         }
+
+        UpdateUIDisplay();
     }
 
     private void HandleAimAndFire()    // 新增瞄准和发射接口
@@ -90,29 +97,27 @@ public class MissileLauncher : MonoBehaviour
         }
     }
 
-    private void UpdateMouseWorldPosition()   // 新增获取鼠标世界坐标接口
+    private void UpdateMouseWorldPosition()   
     {
         Vector3 mouseWorldPos3D = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorldPos = new Vector2(mouseWorldPos3D.x, mouseWorldPos3D.y);
     }
 
-    private bool CanStartAim() // 新增瞄准条件接口
+    private bool CanStartAim()
     {
-        return (Time.time - lastFireTime >= cooldown) && (currentMissileCount > 0);
+        return (Time.time - lastFireTime >= cooldown) && (currentMissileCount > 0) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
     }
 
-    private bool CanFire()  // 新增发射条件接口
+    private bool CanFire()
     {
         return (Time.time - lastFireTime >= cooldown) &&
-               (hookSystem != null && hookSystem.currentEnergy >= energyCost) &&
-               (currentMissileCount > 0);
+               (currentMissileCount > 0) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
     }
 
-    public void FireMissile()   // 新增发射导弹接口
+    public void FireMissile()  
     {
         if (missilePrefab == null)
         {
-            Debug.LogError("未指定飞弹预制体！请在Inspector中赋值missilePrefab");
             return;
         }
 
@@ -130,21 +135,15 @@ public class MissileLauncher : MonoBehaviour
         {
             missileComponent.Initialize(missileSpeed, fireDirection);
         }
-        else
-        {
-            Debug.LogWarning("飞弹预制体缺少Missile组件！飞弹可能无法正常飞行");
-        }
 
         currentMissileCount--;
-        if (hookSystem != null)
-        {
-            hookSystem.currentEnergy -= energyCost;
-        }
-
         lastFireTime = Time.time;
+
+        // 调用 HookSystem 的方法增加温度
+        hookSystem.AddHeat(launchHeat);
     }
 
-    void OnGUI()   // 新增UI接口
+    void OnGUI()
     {
         if (!isAiming || Camera.main == null) return;
 
@@ -181,7 +180,7 @@ public class MissileLauncher : MonoBehaviour
         GUI.color = savedColor;
     }
 
-    private void DrawCircle(Vector2 center, float radius, Color color)  // 新增绘制圆接口
+    private void DrawCircle(Vector2 center, float radius, Color color) 
     {
         const int segments = 24;
         float angleStep = 360f / segments;
@@ -193,6 +192,14 @@ public class MissileLauncher : MonoBehaviour
             Vector2 newPoint = center + new Vector2(Mathf.Cos(rad), Mathf.Sin(rad)) * radius;
             DrawLine(prevPoint, newPoint, color, 2f);
             prevPoint = newPoint;
+        }
+    }
+
+    private void UpdateUIDisplay()
+    {
+        if (temperatureSlider != null)
+        {
+            temperatureSlider.value = hookSystem.currentTemperature;
         }
     }
 }

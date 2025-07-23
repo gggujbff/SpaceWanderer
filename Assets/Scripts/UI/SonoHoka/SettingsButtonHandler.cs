@@ -11,7 +11,6 @@ public class SettingsButtonHandler : MonoBehaviour
     [SerializeField] private Color overlayColor = new Color(0, 0, 0, 0.5f);
     [SerializeField] private int baseSortingOrder = 10;
 
-    // 事件声明
     public System.Action OnWindowOpened;
     public System.Action OnWindowClosed;
 
@@ -56,7 +55,6 @@ public class SettingsButtonHandler : MonoBehaviour
         DisableOtherUI();
         BindCloseEvent();
 
-        // 触发窗口打开事件
         OnWindowOpened?.Invoke();
     }
 
@@ -107,7 +105,7 @@ public class SettingsButtonHandler : MonoBehaviour
 
         Button overlayButton = overlay.AddComponent<Button>();
         overlayButton.transition = Selectable.Transition.None;
-        overlayButton.onClick.AddListener(CloseWindow); // 直接绑定关闭事件
+        overlayButton.onClick.AddListener(CloseWindow); 
     }
 
     private void DisableOtherUI()
@@ -137,14 +135,12 @@ public class SettingsButtonHandler : MonoBehaviour
 
     private void CloseWindow()
     {
-        // 恢复其他UI
         foreach (Selectable ui in disabledUIElements)
         {
             if (ui != null) ui.interactable = true;
         }
         disabledUIElements.Clear();
 
-        // 销毁悬浮窗
         if (currentWindow != null)
         {
             Destroy(currentWindow);
@@ -152,7 +148,6 @@ public class SettingsButtonHandler : MonoBehaviour
             overlay = null;
         }
 
-        // 触发窗口关闭事件
         OnWindowClosed?.Invoke();
     }
 

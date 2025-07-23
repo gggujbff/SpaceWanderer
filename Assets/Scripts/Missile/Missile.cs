@@ -17,7 +17,6 @@ public class Missile : MonoBehaviour
     [Tooltip("导弹半径")]
     public float capsuleRadius = 0.3f;
 
-    //可被销毁的目标标签
     private List<string> destroyableTags = new List<string> { "Obstacle" , "Energy"};
 
     // 胶囊体方向（水平或垂直）

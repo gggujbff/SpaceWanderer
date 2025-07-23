@@ -3,6 +3,7 @@ using UnityEngine;
 public class HookTipCollisionHandler : MonoBehaviour
 {
     public HookSystem hookSystem;
+    public float heatPerUnitMass = 1f; // 每单位质量产生的热量
 
     private void OnTriggerEnter2D(Collider2D other)
     {
@@ -17,6 +18,14 @@ public class HookTipCollisionHandler : MonoBehaviour
 
                     if (collectible.OnGrabbed(this))
                     {
+                        // 根据收集物质量增加温度
+                        if (collectible.TryGetComponent<Rigidbody2D>(out var rb))
+                        {
+                            float heatGenerated = rb.mass * heatPerUnitMass;
+                            //hookSystem.currentTemperature += heatGenerated;
+                            hookSystem.AddGrabbedMass(rb.mass); // 添加物体质量
+                        }
+
                         hookSystem.RetrieveHook();
                     }
                 }
@@ -36,6 +45,14 @@ public class HookTipCollisionHandler : MonoBehaviour
 
                 if (hookMomentum >= obstacle.destroyedMomentum * 0.7f)
                 {
+                    // 根据障碍物质量增加温度
+                    if (obstacle.TryGetComponent<Rigidbody2D>(out var rb))
+                    {
+                        float heatGenerated = rb.mass * heatPerUnitMass;
+                        hookSystem.currentTemperature += heatGenerated;
+                        hookSystem.AddGrabbedMass(rb.mass); // 添加物体质量
+                    }
+
                     hookSystem.RetrieveHook();
                 }
             }
@@ -44,7 +61,6 @@ public class HookTipCollisionHandler : MonoBehaviour
 
     public void OnRetrieveComplete()
     {
-        // 使用GetComponentsInChildren确保找到所有子物体（包括嵌套层级）
         CollectibleObject[] collectedObjects = GetComponentsInChildren<CollectibleObject>(true);
         foreach (var collectible in collectedObjects)
         {
@@ -54,5 +70,6 @@ public class HookTipCollisionHandler : MonoBehaviour
                 collectible.OnHarvested();
             }
         }
+        hookSystem.ResetGrabbedMass(); // 回收完成后重置质量
     }
 }

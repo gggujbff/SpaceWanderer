@@ -9,15 +9,12 @@ public class SettingButton : MonoBehaviour
 
     private void Start()
     {
-        // 获取按钮组件
         closeButton = GetComponent<Button>();
         
-        // 查找最近的Canvas组件（向上查找父级）
         targetCanvas = GetComponentInParent<Canvas>();
 
         if (closeButton != null && targetCanvas != null)
         {
-            // 添加点击事件
             closeButton.onClick.AddListener(CloseCanvas);
         }
         else
@@ -28,7 +25,6 @@ public class SettingButton : MonoBehaviour
 
     private void CloseCanvas()
     {
-        // 删除整个Canvas对象
         if (targetCanvas != null)
         {
             Destroy(targetCanvas.gameObject);

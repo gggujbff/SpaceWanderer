@@ -3,34 +3,30 @@ using UnityEngine;
 
 public class ShieldController : MonoBehaviour
 {
-    [Header("开启初次消耗的能量")]
-    public float initialEnergyCost = 10f;
-
-    [Header("每秒消耗的能量")]
-    public float energyDrainPerSecond = 5f;
-
     [Header("冷却配置")]
     public float cooldownDuration = 3f;
 
     [Header("护盾预制体")]
     public GameObject shieldPrefab;
-    
-    private List<string> destructibleTags = new List<string> { "Obstacle" };  //护盾碰撞时销毁的物体标签名单
+
+    [Header("过热参数")]
+    public float activateHeat = 20f; // 激活护盾产生的热量
+    public float heatPerSecond = 5f; // 护盾持续开启每秒产生的热量
+
+    private List<string> destructibleTags = new List<string> { "Obstacle" };  // 护盾碰撞时销毁的物体标签名单
     private enum ShieldState { Closed, Active, Cooldown }
     private ShieldState state = ShieldState.Closed;
     private float cooldownTimer = 0f;
     private GameObject currentShield;
-    private HookSystem hookSystem;
     private Transform shieldSpawnPoint;
     private KeyCode toggleKey = KeyCode.S;  // 切换护盾的按键
 
-    
-    private float debugLogTimer = 0f;
+    private HookSystem hookSystem;
 
     private void Start()
     {
-        hookSystem = GetComponent<HookSystem>();
         shieldSpawnPoint = this.transform;
+        hookSystem = GetComponent<HookSystem>();
     }
 
     private void Update()
@@ -38,7 +34,7 @@ public class ShieldController : MonoBehaviour
         switch (state)
         {
             case ShieldState.Closed:
-                if (Input.GetKeyDown(toggleKey) && hookSystem != null && hookSystem.currentEnergy >= initialEnergyCost)
+                if (Input.GetKeyDown(toggleKey) && CanActivateShield())
                 {
                     ActivateShield();
                 }
@@ -51,12 +47,10 @@ public class ShieldController : MonoBehaviour
                 }
                 else
                 {
-                    DrainEnergy();
-                    debugLogTimer += Time.deltaTime;
-                    if (debugLogTimer >= 1f)
+                    // 护盾激活时持续放热
+                    if (hookSystem != null)
                     {
-                        Debug.Log($"[护盾] 当前能量: {hookSystem.currentEnergy:F2}, 每秒消耗: {energyDrainPerSecond}");
-                        debugLogTimer = 0f;
+                        hookSystem.currentTemperature += heatPerSecond * Time.deltaTime;
                     }
                 }
                 break;
@@ -71,9 +65,13 @@ public class ShieldController : MonoBehaviour
         }
     }
 
-    private void ActivateShield()  // 开启护盾
+    private bool CanActivateShield()
     {
-        hookSystem.currentEnergy -= initialEnergyCost;
+        return hookSystem != null && hookSystem.currentOverheatState == HookSystem.OverheatState.Normal && cooldownTimer <= 0f;
+    }
+
+    private void ActivateShield()
+    {
         currentShield = Instantiate(shieldPrefab, shieldSpawnPoint.position, shieldSpawnPoint.rotation, shieldSpawnPoint);
 
         ShieldCollisionHandler collisionHandler = currentShield.GetComponent<ShieldCollisionHandler>();
@@ -86,9 +84,15 @@ public class ShieldController : MonoBehaviour
             Debug.LogWarning("shieldPrefab缺少ShieldCollisionHandler组件！");
         }
         state = ShieldState.Active;
+
+        // 激活时增加温度
+        if (hookSystem != null)
+        {
+            hookSystem.currentTemperature += activateHeat;
+        }
     }
 
-    private void DeactivateShield()  //  碰撞时销毁物体
+    private void DeactivateShield()
     {
         if (currentShield != null)
         {
@@ -97,21 +101,5 @@ public class ShieldController : MonoBehaviour
         }
         cooldownTimer = cooldownDuration;
         state = ShieldState.Cooldown;
-    }
-
-    private void DrainEnergy()  // 减少护盾的能量
-    {
-        if (hookSystem == null) return;
-
-        float drainAmount = energyDrainPerSecond * Time.deltaTime;
-        if (hookSystem.currentEnergy >= drainAmount)
-        {
-            hookSystem.currentEnergy -= drainAmount;
-        }
-        else
-        {
-            // 能量不足，自动关闭护盾
-            DeactivateShield();
-        }
     }
 }
