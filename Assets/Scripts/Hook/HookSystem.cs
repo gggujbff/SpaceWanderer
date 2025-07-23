@@ -15,41 +15,59 @@ public class HookSystem : MonoBehaviour
     public GameObject hookTipPrefab; // 钩爪尖端预制体
 
     [Header("绳索设置")]
+    [Tooltip("绳索宽度")]
+    public float ropeWidth = 0.4f; // 增大宽度
+    [Tooltip("绳索材质")]
     public Material ropeMaterial; // 绳索材质
-    public Color ropeColor = Color.yellow;
-    [Range(0.1f, 1f)] public float ropeWidth = 0.4f; // 增大宽度
-    public string ropeSortingLayer = "Default";
-    public int ropeSortingOrder = 50; //确保在默认层级最上层
+    
+    [HideInInspector]public Color ropeColor = Color.yellow;
+    [HideInInspector]public string ropeSortingLayer = "Default";
+    [HideInInspector]public int ropeSortingOrder = 50; //确保在默认层级最上层
 
     [Header("基础属性")]
+    [Tooltip("最大长度")]
     public float maxLength = 10f;
+    [Tooltip("中心偏移距离")]
     public float standbyDistance = 3f; // 增大初始待机距离，确保初始可见
+    [Tooltip("基础旋转速度")]
     public float baseRotateSpeed = 30f;
+    [Tooltip("发射力量")]
     public float baseLaunchSpeed = 10f;
+    [Tooltip("回收力量")]
     public float baseRetrieveSpeed = 10f;
     
-
-    [Header("加速属性")]
-    public float accelerateRotateSpeed = 100f;
-    public float accelerateLaunchSpeed = 20f;
-    public float accelerateRetrieveSpeed = 24f;
+    [Header("加速速度")]
+    [Tooltip("旋转加速速度")]
+    public float accelerateRotateSpeed = 70f; 
+    [Tooltip("钩爪发射加速速度")]
+    public float accelerateLaunchSpeed = 18f;  
+    [Tooltip("钩爪回收加速速度")]
+    public float accelerateRetrieveSpeed = 22f;  
 
     [Header("过热参数")]
+    [Tooltip("初始温度")]
     public float initialTemperature = 0f; // 初始温度
+    [Tooltip("过热阈值温度")]
     public float overheatThreshold = 100f; // 过热阈值温度
+    [Tooltip("过热后最大运行时间")]
     public float maxOverheatTime = 5f; // 过热后最大运行时间
+    [Tooltip("旋转方向切换产生的热量")]
     public float rotateSwitchHeat = 5f; // 旋转方向切换产生的热量
-    public float accelerateHeatPerSecond = 8f; // 加速时每秒产生的热量
-    public float coolingRate = 10f; // 冷却速率
+    [Tooltip("加速时每秒产生的热量")]
+    public float accelerateHeatPerSecond = 8f; // 加速时放热（直接控制）
+    [Tooltip("正常情况下每秒产生的热量")]
+    public float normalHeatPerSecond = 2f; // 新增：常态放热参数
+    [Tooltip("冷却速率")]
+    public float coolingRate = 10f; // 新增：冷却速率参数
 
     [Header("冷却CD")]
     public float rotateSwitchCD = 1f;
     public float accelerateCD = 2f;
 
-    [Header("加速度")]
-    public float rotationSmoothSpeed = 5f;
-    public float lengthSmoothSpeed = 5f;
-    public float switchDirSmoothSpeed = 8f;
+    [Header("加速度属性（平滑过渡速度）")]
+    public float rotationSmoothSpeed = 5f; // 旋转速度平滑过渡的加速度
+    public float lengthSmoothSpeed = 5f; // 发射/回收速度平滑过渡的加速度
+    public float switchDirSmoothSpeed = 8f; // 转向时的平滑过渡加速度
 
     [Header("UI显示")]
     public Slider temperatureSlider;
@@ -77,14 +95,15 @@ public class HookSystem : MonoBehaviour
     [HideInInspector] public float currentOverheatTime = 0f; // 当前过热时间
     [HideInInspector] public float spaceShipVelocity = 0f; // 飞船速度
 
-    private float currentRotateSpeed;
-    public float currentLaunchSpeed;
-    public float currentRetrieveSpeed;
+    private float currentRotateSpeed; // 当前旋转速度（带方向）
+    private float currentLaunchSpeed; // 当前发射速度
+    private float currentRetrieveSpeed; // 当前回收速度
     private int currentScore = 0;
     private bool isAccelerating = false;
     private float rotateSwitchCDTimer = 0f;
     private float accelerateCDTimer = 0f;
     private bool isSwitchingDir = false;
+    private float targetRotateSpeed; // 旋转速度的目标值（用于平滑过渡）
 
     private LineRenderer ropeRenderer;
     private Transform hookTip;
@@ -92,13 +111,13 @@ public class HookSystem : MonoBehaviour
 
     public static HookSystem Instance;
 
-    // 新增参数
-    public float k = 0.1f; // 发热功率系数
-    public float a = 1f; // 调整拖拽发热功率的系数
-    public float c = 1f; // 飞船热容
-    public float ambientTemperature = 0f; // 环境温度
+    // 物理参数
+    public float k = 0.1f;
+    public float a = 1f;
+    public float c = 1f;
+    public float ambientTemperature = 0f;
 
-    private float grabbedMass = 0f; // 新增：当前钩中的物体总质量
+    private float grabbedMass = 0f; // 当前钩中的物体总质量
 
     private void Awake()
     {
@@ -130,7 +149,7 @@ public class HookSystem : MonoBehaviour
         if (ropeMaterial == null)
         {
             ropeMaterial = new Material(Shader.Find("Unlit/Color"));
-            ropeMaterial.color = ropeColor; // 用用户设置的颜色
+            ropeMaterial.color = ropeColor;
         }
         else
         {
@@ -138,7 +157,7 @@ public class HookSystem : MonoBehaviour
             {
                 ropeMaterial.shader = Shader.Find("Unlit/Color");
             }
-            ropeMaterial.color = new Color(ropeColor.r, ropeColor.g, ropeColor.b, 1f); // 强制不透明
+            ropeMaterial.color = new Color(ropeColor.r, ropeColor.g, ropeColor.b, 1f);
         }
 
         ropeRenderer.material = ropeMaterial;
@@ -156,7 +175,6 @@ public class HookSystem : MonoBehaviour
         ropeRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
 
-    // 初始化钩爪尖端
     private void InitFromPrefabs()
     {
         if (hookTipPrefab != null)
@@ -186,11 +204,13 @@ public class HookSystem : MonoBehaviour
         isAccelerating = false;
         isSwitchingDir = false;
 
+        // 初始化速度（使用基础速度）
         currentRotateSpeed = baseRotateSpeed;
         currentLaunchSpeed = baseLaunchSpeed;
         currentRetrieveSpeed = baseRetrieveSpeed;
+        targetRotateSpeed = currentRotateSpeed; // 初始化目标旋转速度
 
-        grabbedMass = 0f; // 初始化钩中物体总质量
+        grabbedMass = 0f;
 
         UpdateUIDisplay();
     }
@@ -200,6 +220,7 @@ public class HookSystem : MonoBehaviour
         UpdateCDTimers(Time.deltaTime);
         HandleInput();
         UpdateState(Time.deltaTime);
+        UpdateSpeedSmoothing(Time.deltaTime); // 处理速度平滑过渡
         UpdateHookPosition();
         
         UpdateUIDisplay();
@@ -230,7 +251,8 @@ public class HookSystem : MonoBehaviour
         }
 
         bool isShiftPressed = Input.GetKey(KeyCode.LeftShift);
-        if (isShiftPressed && !isAccelerating && currentOverheatState == OverheatState.Normal && accelerateCDTimer <= 0)
+        if (isShiftPressed && !isAccelerating && currentOverheatState == OverheatState.Normal && 
+            accelerateCDTimer <= 0 && currentState == HookState.ReadyToLaunch)
         {
             isAccelerating = true;
         }
@@ -239,6 +261,24 @@ public class HookSystem : MonoBehaviour
             isAccelerating = false;
             accelerateCDTimer = accelerateCD;
         }
+    }
+
+    private void SwitchLaunchOrRetrieve()
+    {
+        if (currentState == HookState.ReadyToLaunch)
+        {
+            currentState = HookState.Launching;
+        }
+    }
+
+    private void StartSwitchRotationDir()
+    {
+        isSwitchingDir = true;
+        // 切换方向时，计算新的目标旋转速度（反向）
+        targetRotateSpeed = -targetRotateSpeed; 
+        currentDir = currentDir == RotationDir.Clockwise ? RotationDir.CounterClockwise : RotationDir.Clockwise;
+        currentTemperature += rotateSwitchHeat; // 旋转切换产生热量（保留原逻辑）
+        rotateSwitchCDTimer = rotateSwitchCD;
     }
 
     private void UpdateState(float deltaTime)
@@ -260,16 +300,11 @@ public class HookSystem : MonoBehaviour
                 break;
         }
 
-        // 计算发热功率
-        float heatGenerationPower = CalculateHeatGenerationPower();
-        // 计算散热功率
+        // 计算热量变化（核心修改部分）
+        float heatGenerationPower = CalculateHeatGenerationPower(); // 改用新的热量计算方式
         float heatDissipationPower = CalculateHeatDissipationPower();
-
-        // 计算热量变化
         float heatChange = (heatGenerationPower - heatDissipationPower) * deltaTime;
-        // 计算温度变化
         float temperatureChange = heatChange / c;
-
         currentTemperature += temperatureChange;
 
         switch (currentOverheatState)
@@ -299,44 +334,28 @@ public class HookSystem : MonoBehaviour
                 break;
         }
 
-        // 计算旋转、发射速度目标值（保留原有逻辑）
         float targetRotate = isAccelerating ? accelerateRotateSpeed : baseRotateSpeed;
-        float targetLaunch = isAccelerating ? accelerateLaunchSpeed : baseLaunchSpeed;
 
-        // 计算回收速度目标值（核心修改：质量直接影响基础速度，加速在此基础上叠加）
-        float massInfluence = 1 + grabbedMass; // 质量影响系数（可调整为1 + 0.5*grabbedMass弱化影响）
-        float massAdjustedBase = baseRetrieveSpeed / massInfluence; // 质量调整后的基础回收速度
-        float massAdjustedAccelerate = accelerateRetrieveSpeed / massInfluence; // 质量调整后的加速回收速度
-        float targetRetrieve = isAccelerating ? massAdjustedAccelerate : massAdjustedBase;
-        targetRetrieve = Mathf.Max(1f, targetRetrieve); // 确保最低速度，避免无法回收
-
-        // 直接设置为目标速度（移除平滑过渡）
-        currentRotateSpeed = targetRotate * (currentDir == RotationDir.Clockwise ? 1 : -1);
-        currentLaunchSpeed = targetLaunch;
-        currentRetrieveSpeed = targetRetrieve;
+        // 更新旋转目标速度（考虑方向）
+        if (!isSwitchingDir) // 转向过程中不更新目标速度
+        {
+            targetRotateSpeed = targetRotate * (currentDir == RotationDir.Clockwise ? 1 : -1);
+        }
     }
 
+    // 修改热量生成逻辑：加速时用accelerateHeatPerSecond，常态用normalHeatPerSecond
     private float CalculateHeatGenerationPower()
     {
-        float speed;
-        switch (currentState)
+        // 加速状态下直接使用加速放热参数
+        if (isAccelerating)
         {
-            case HookState.ReadyToLaunch:
-                speed = Mathf.Abs(currentRotateSpeed);
-                break;
-            case HookState.Launching:
-                speed = currentLaunchSpeed;
-                break;
-            case HookState.Retrieving:
-                speed = currentRetrieveSpeed;
-                break;
-            default:
-                speed = 0f;
-                break;
+            return accelerateHeatPerSecond;
         }
-
-        // 这里简单假设没有拖拽重物，若需要考虑拖拽重物，可添加相应逻辑
-        return k * speed;
+        // 非加速状态下使用常态放热参数
+        else
+        {
+            return normalHeatPerSecond;
+        }
     }
 
     private float CalculateHeatDissipationPower()
@@ -345,31 +364,40 @@ public class HookSystem : MonoBehaviour
         return deltaTemperature * k;
     }
 
-    private void SwitchLaunchOrRetrieve()
+    private void UpdateSpeedSmoothing(float deltaTime)
     {
-        if (currentState == HookState.ReadyToLaunch)
+        // 1. 转向时的平滑过渡（使用 switchDirSmoothSpeed）
+        float rotateStep = switchDirSmoothSpeed * deltaTime;
+        currentRotateSpeed = Mathf.MoveTowards(currentRotateSpeed, targetRotateSpeed, rotateStep);
+
+        // 2. 仅保留发射速度的平滑过渡
+        float launchStep = rotationSmoothSpeed * deltaTime;
+        float targetLaunch = isAccelerating ? accelerateLaunchSpeed : baseLaunchSpeed;
+        currentLaunchSpeed = Mathf.MoveTowards(currentLaunchSpeed, targetLaunch, launchStep);
+
+        // 3. 回收速度直接使用目标值（移除平滑过渡）
+        currentRetrieveSpeed = CalculateTargetRetrieveSpeed();
+
+        // 检查转向是否完成
+        if (isSwitchingDir && Mathf.Abs(currentRotateSpeed - targetRotateSpeed) < 0.1f)
         {
-            currentState = HookState.Launching;
+            isSwitchingDir = false;
         }
     }
-
-    private void StartSwitchRotationDir()
+    
+    private float CalculateTargetRetrieveSpeed()
     {
-        isSwitchingDir = true;
-        currentDir = currentDir == RotationDir.Clockwise ? RotationDir.CounterClockwise : RotationDir.Clockwise;
-        currentTemperature += rotateSwitchHeat;
-        rotateSwitchCDTimer = rotateSwitchCD;
+        float massResistance = 1 + (grabbedMass * grabbedMass); // 质量平方作为阻力
+    
+        float baseSpeed = isAccelerating ? accelerateRetrieveSpeed : baseRetrieveSpeed;
+    
+        return Mathf.Max(baseSpeed * 0.1f, baseSpeed * 2f / massResistance);
     }
 
     private void UpdateRotation(float deltaTime)
     {
         currentRotation += currentRotateSpeed * deltaTime;
         currentRotation = (currentRotation % 360 + 360) % 360;
-
-        if (isSwitchingDir && Mathf.Abs(currentRotateSpeed - (currentDir == RotationDir.Clockwise ? baseRotateSpeed : -baseRotateSpeed)) < 0.5f)
-        {
-            isSwitchingDir = false;
-        }
     }
 
     private void UpdateLaunching(float deltaTime)
@@ -393,7 +421,6 @@ public class HookSystem : MonoBehaviour
         }
         else
         {
-            // 在钩回过程中持续增加热度
             float heatPerUnitMass = hookTipCollisionHandler.heatPerUnitMass;
             float heatGenerated = grabbedMass * heatPerUnitMass * deltaTime;
             currentTemperature += heatGenerated;
@@ -405,6 +432,7 @@ public class HookSystem : MonoBehaviour
         if (currentState == HookState.Launching)
         {
             currentState = HookState.Retrieving;
+            hookTipCollisionHandler?.ResetGrabState();
         }
     }
 
@@ -421,7 +449,6 @@ public class HookSystem : MonoBehaviour
         hookTip.rotation = Quaternion.Euler(0, 0, angle);
     }
 
-    // 更新绳索路径（仅强化可见性，不改变逻辑）
     private void UpdateRopePath()
     {
         if (ropeRenderer == null) return;
@@ -450,23 +477,11 @@ public class HookSystem : MonoBehaviour
         ropeRenderer.enabled = true;
     }
 
-    // 以下UI和状态方法完全保留
-    private void UpdateUIDisplay()
-    {
-        if (temperatureSlider != null) temperatureSlider.value = currentTemperature;
-        if (temperaturePercentText != null)
-            temperaturePercentText.text = $"{(currentTemperature / overheatThreshold) * 100f:F1}%";
-        if (healthSlider != null) healthSlider.value = currentHealth;
-        if (healthPercentText != null)
-            healthPercentText.text = $"{(currentHealth / maxHealth) * 100f:F1}%";
-        if (scoreText != null)
-            scoreText.text = $"分数: {currentScore}";
-    }
-
     private void InitUI()
     {
         if (temperatureSlider != null)
         {
+            temperatureSlider.minValue = initialTemperature;
             temperatureSlider.maxValue = overheatThreshold;
             temperatureSlider.value = currentTemperature;
         }
@@ -476,6 +491,29 @@ public class HookSystem : MonoBehaviour
             healthSlider.value = currentHealth;
         }
         UpdateUIDisplay();
+    }
+
+    private void UpdateUIDisplay()
+    {
+        if (temperatureSlider != null)
+        {
+            float displayTemperature = Mathf.Clamp(currentTemperature, initialTemperature, overheatThreshold);
+            temperatureSlider.value = displayTemperature;
+        }
+    
+        if (temperaturePercentText != null)
+        {
+            temperaturePercentText.text = $"{currentTemperature:F1}°C";
+        }
+    
+        if (healthSlider != null) 
+            healthSlider.value = currentHealth;
+    
+        if (healthPercentText != null)
+            healthPercentText.text = $"{(currentHealth / maxHealth) * 100f:F1}%";
+    
+        if (scoreText != null)
+            scoreText.text = $"分数: {currentScore}";
     }
 
     public void AddScore(int amount)
@@ -494,16 +532,9 @@ public class HookSystem : MonoBehaviour
         UpdateUIDisplay();
     }
 
-    private void Die() { }  // 待实现
-
-    public void GrabCooling(float coolingAmount)
+    private void Die()
     {
-        currentTemperature = Mathf.Max(0, currentTemperature - coolingAmount);
-        if (currentTemperature <= 0 && currentOverheatState == OverheatState.Cooling)
-        {
-            currentOverheatState = OverheatState.Normal;
-        }
-        UpdateUIDisplay();
+        Debug.Log("寄了！");
     }
 
     public float CurrentLaunchSpeed => currentLaunchSpeed;
@@ -512,7 +543,7 @@ public class HookSystem : MonoBehaviour
     {
         if (mainCamera == null)
         {
-            mainCamera = Camera.main; // 如果未赋值则尝试获取主相机
+            mainCamera = Camera.main;
             if (mainCamera == null) return false;
         }
 

@@ -99,6 +99,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hookSystem: {fileID: 0}
+  heatPerUnitMass: 1
+  maxGrabbableMass: 999
+  logCollisions: 1
 --- !u!61 &6543386079128754975
 BoxCollider2D:
   m_ObjectHideFlags: 0
