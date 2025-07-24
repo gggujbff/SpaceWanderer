@@ -8,7 +8,7 @@ public class LaserWeapon : MonoBehaviour
 
     [Header("发射相关")]
     [Tooltip("持有数量")]
-    [SerializeField] private int fireCount = 3;
+    public int fireCount = 3;
 
     [Tooltip("最大持有量")]
     public int maxCount = 3;
@@ -45,7 +45,7 @@ public class LaserWeapon : MonoBehaviour
     [Tooltip("激光每秒释放的热量（持续时间内持续加热）")]
     public float continuousFireHeatRate = 5f;
 
-    private List<string> destroyableTags = new List<string> { "Obstacle" };
+    private List<string> destroyableTags = new List<string> { "Obstacle" , "Collectible"};
 
     private Color aimColor = new Color(1, 0, 0, 0.9f);
     private float aimTargetRadius = 10f;

@@ -12,8 +12,9 @@ public class CollectibleObject : MonoBehaviour
     public int scoreValue = 10;
 
     [Tooltip("可收集道具数量")]
-    public int missileCount = 0;  // 修正变量名（规范驼峰命名）
-    public int laserCount = 0;    // 修正变量名
+    public int missileCount = 0; 
+    public int laserCount = 0; 
+    public int netCount = 0;  
     
     [HideInInspector] public MissileLauncher missileLauncher;
     [HideInInspector] public LaserWeapon laserWeapon;  // 修正变量名（与类名一致）
@@ -34,6 +35,7 @@ public class CollectibleObject : MonoBehaviour
     // 新增：存储玩家身上的武器组件（避免重复查找）
     private MissileLauncher playerMissileLauncher;
     private LaserWeapon playerLaserWeapon;
+    private NetLauncher playerNetLauncher;
 
     private void Start()
     {
@@ -53,6 +55,7 @@ public class CollectibleObject : MonoBehaviour
         {
             playerMissileLauncher = player.GetComponent<MissileLauncher>();
             playerLaserWeapon = player.GetComponent<LaserWeapon>();
+            playerNetLauncher = player.GetComponent<NetLauncher>();
         }
         else
         {
@@ -142,7 +145,6 @@ public class CollectibleObject : MonoBehaviour
 
         currentState = CollectibleState.Harvested;
 
-        // 收集分数
         switch (subType)
         {
             case CollectibleSubType.Resource:
@@ -161,21 +163,21 @@ public class CollectibleObject : MonoBehaviour
         Destroy(gameObject);
     }
 
-    // 新增：收集逻辑封装（碰撞或抓取后调用）
     private void CollectForPlayer()
     {
-        // 增加导弹数量
         if (missileCount > 0 && playerMissileLauncher != null)
         {
             playerMissileLauncher.AddcurrentMissileCount(missileCount);
-            Debug.Log($"收集了 {missileCount} 枚导弹，当前总数：{playerMissileLauncher.currentMissileCount}");
         }
 
-        // 增加激光使用次数
         if (laserCount > 0 && playerLaserWeapon != null)
         {
             playerLaserWeapon.AddcurrentLaserCount(laserCount);
-            //Debug.Log($"收集了 {laserCount} 次激光使用次数，当前总数：{playerLaserWeapon.fireCount}");
+        }
+        
+        if (netCount > 0 && playerLaserWeapon != null)
+        {
+            playerNetLauncher.AddcurrentNetCount(netCount);
         }
     }
 

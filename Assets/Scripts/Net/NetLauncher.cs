@@ -1,28 +1,28 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class MissileLauncher : MonoBehaviour
+public class NetLauncher : MonoBehaviour
 {
-    [Tooltip("导弹的预制体")]
-    public GameObject missilePrefab;
+    [Tooltip("捕网的预制体")]
+    public GameObject netPrefab;
 
     [Header("数量管理")]
-    [Tooltip("当前持有的导弹数量")]
-    public int currentMissileCount = 5;
-    [Tooltip("最多可存储的导弹数量")]
-    public int maxMissileCount = 10;
+    [Tooltip("当前持有的捕网数量")]
+    public int currentNetCount = 5;
+    [Tooltip("最多可存储的捕网数量")]
+    public int maxNetCount = 10;
 
     [Header("发射参数")]
     [Tooltip("发射冷却时间")]
     public float cooldown = 2f;
     [Tooltip("飞行速度")]
-    public float missileSpeed = 10f;
+    public float netSpeed = 10f;
     [Tooltip("瞄准状态的时间")]
     public float aimCancelTime = 3f;
 
     [Header("发射起点偏移")]
-    [Tooltip("导弹从角色中心沿方向偏移的距离")]
-    public float missileOffsetDistance = 0.5f;  // 新增偏移量
+    [Tooltip("捕网从角色中心沿方向偏移的距离")]
+    public float netOffsetDistance = 0.5f;  // 新增偏移量
 
     [Header("瞄准反馈")]
     public float aimTargetRadius = 10f;
@@ -30,12 +30,12 @@ public class MissileLauncher : MonoBehaviour
     public Color aimColor = new Color(1, 1, 0, 0.9f); // 黄色透明
 
     [Header("过热参数")]
-    public float launchHeat = 20f; // 发射一次导弹产生的热量
+    public float launchHeat = 20f; // 发射一次捕网产生的热量
 
     [Header("UI显示")]
     public Slider temperatureSlider;
 
-    private KeyCode fireKey = KeyCode.Alpha1;
+    private KeyCode fireKey = KeyCode.Alpha3;
     private HookSystem hookSystem;           // 能量管理系统引用
     [HideInInspector] public float lastFireTime = float.MinValue; // 上次发射的时间戳
     private bool isAiming = false;           // 是否处于瞄准状态
@@ -47,7 +47,7 @@ public class MissileLauncher : MonoBehaviour
     void Awake()
     {
         hookSystem = GetComponent<HookSystem>();
-        currentMissileCount = Mathf.Clamp(currentMissileCount, 0, maxMissileCount);
+        currentNetCount = Mathf.Clamp(currentNetCount, 0, maxNetCount);
 
         if (_lineTex == null)
         {
@@ -90,7 +90,7 @@ public class MissileLauncher : MonoBehaviour
             {
                 if (CanFire())
                 {
-                    FireMissile();
+                    FireNet();
                 }
                 isAiming = false;
             }
@@ -105,38 +105,38 @@ public class MissileLauncher : MonoBehaviour
 
     private bool CanStartAim()
     {
-        return (Time.time - lastFireTime >= cooldown) && (currentMissileCount > 0) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
+        return (Time.time - lastFireTime >= cooldown) && (currentNetCount > 0) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
     }
 
     private bool CanFire()
     {
         return (Time.time - lastFireTime >= cooldown) &&
-               (currentMissileCount > 0) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
+               (currentNetCount > 0) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
     }
 
-    public void FireMissile()  
+    public void FireNet()  
     {
-        if (missilePrefab == null)
+        if (netPrefab == null)
         {
             return;
         }
 
         Vector2 fireDirection = (mouseWorldPos - (Vector2)transform.position).normalized;
-        Vector2 origin = (Vector2)transform.position + fireDirection * missileOffsetDistance; // 新增发射起点偏移
+        Vector2 origin = (Vector2)transform.position + fireDirection * netOffsetDistance; // 新增发射起点偏移
 
-        GameObject missile = Instantiate(
-            missilePrefab,
+        GameObject net = Instantiate(
+            netPrefab,
             origin,
             Quaternion.LookRotation(Vector3.forward, fireDirection)
         );
 
-        Missile missileComponent = missile.GetComponent<Missile>();
-        if (missileComponent != null)
+        Net netComponent = net.GetComponent<Net>();
+        if (netComponent != null)
         {
-            missileComponent.Initialize(missileSpeed, fireDirection);
+            netComponent.Initialize(netSpeed, fireDirection);
         }
 
-        currentMissileCount--;
+        currentNetCount--;
         lastFireTime = Time.time;
 
         // 调用 HookSystem 的方法增加温度
@@ -148,7 +148,7 @@ public class MissileLauncher : MonoBehaviour
         if (!isAiming || Camera.main == null) return;
 
         Vector2 fireDir = (mouseWorldPos - (Vector2)transform.position).normalized;
-        Vector3 worldOrigin = (Vector2)transform.position + fireDir * missileOffsetDistance;
+        Vector3 worldOrigin = (Vector2)transform.position + fireDir * netOffsetDistance;
         Vector3 screenStart = Camera.main.WorldToScreenPoint(worldOrigin);
         Vector3 screenEnd = Camera.main.WorldToScreenPoint(mouseWorldPos);
 
@@ -203,8 +203,8 @@ public class MissileLauncher : MonoBehaviour
         }
     }
 
-    public void AddcurrentMissileCount(int count)
+    public void AddcurrentNetCount(int count)
     {
-        currentMissileCount = Mathf.Clamp(currentMissileCount + count, 0, maxMissileCount);
+        currentNetCount = Mathf.Clamp(currentNetCount + count, 0, maxNetCount);
     }
 }
