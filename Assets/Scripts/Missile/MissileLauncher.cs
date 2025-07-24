@@ -202,4 +202,10 @@ public class MissileLauncher : MonoBehaviour
             temperatureSlider.value = hookSystem.currentTemperature;
         }
     }
+
+    public void AddcurrentMissileCount(int count)
+    {
+        Debug.Log("Add current missile count: " + count);
+        currentMissileCount += count;
+    }
 }

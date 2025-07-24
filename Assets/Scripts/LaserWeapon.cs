@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Collections;
 
 public class LaserWeapon : MonoBehaviour
 {
@@ -8,6 +7,12 @@ public class LaserWeapon : MonoBehaviour
     public LineRenderer laserLine;
 
     [Header("发射相关")]
+    [Tooltip("持有数量")]
+    [SerializeField] private int fireCount = 3;
+
+    [Tooltip("最大持有量")]
+    public int maxCount = 3;
+
     [Tooltip("冷却时间")]
     public float cooldown = 2f;
 
@@ -28,13 +33,17 @@ public class LaserWeapon : MonoBehaviour
     public Color laserColor = new Color(1, 0, 0, 0.9f);
 
     [Tooltip("激光伸长的速度")]
-    public float laserGrowSpeed = 200f;   
+    public float laserGrowSpeed = 200f;
 
     [Tooltip("激光材质")]
     public Material laserMaterial;
 
     [Header("过热参数")]
-    public float fireHeat = 30f; // 发射一次激光产生的热量
+    [Tooltip("激光启动时立即增加的热量")]
+    public float fireHeat = 30f;
+
+    [Tooltip("激光每秒释放的热量（持续时间内持续加热）")]
+    public float continuousFireHeatRate = 5f;
 
     private List<string> destroyableTags = new List<string> { "Obstacle" };
 
@@ -67,6 +76,7 @@ public class LaserWeapon : MonoBehaviour
         }
 
         UpdateLaserAppearance();
+        fireCount = Mathf.Min(fireCount, maxCount); // 确保初始值不超过上限
     }
 
     private void UpdateLaserAppearance()
@@ -78,13 +88,13 @@ public class LaserWeapon : MonoBehaviour
 
         if (laserMaterial != null)
         {
-            laserLine.material = new Material(laserMaterial); 
+            laserLine.material = new Material(laserMaterial);
             laserLine.textureMode = LineTextureMode.Tile;
         }
         else
         {
             Debug.LogWarning("未设置 laserMaterial 材质");
-            laserLine.material = new Material(Shader.Find("Sprites/Default")); 
+            laserLine.material = new Material(Shader.Find("Sprites/Default"));
         }
 
         laserLine.startColor = laserColor;
@@ -95,7 +105,6 @@ public class LaserWeapon : MonoBehaviour
 
         laserLine.enabled = false;
     }
-
 
     void Update()
     {
@@ -143,17 +152,21 @@ public class LaserWeapon : MonoBehaviour
 
     private bool CanStartAim()
     {
-        return (Time.time - lastFireTime >= cooldown) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
+        return (Time.time - lastFireTime >= cooldown) && 
+               hookSystem.currentTemperature < hookSystem.overheatThreshold &&
+               fireCount > 0;
     }
 
     private bool CanFire()
     {
-        return (Time.time - lastFireTime >= cooldown) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
+        return (Time.time - lastFireTime >= cooldown) && 
+               hookSystem.currentTemperature < hookSystem.overheatThreshold &&
+               fireCount > 0;
     }
 
     public void FireLaser()
     {
-        if (laserLine == null)
+        if (laserLine == null || fireCount <= 0)
         {
             return;
         }
@@ -162,8 +175,9 @@ public class LaserWeapon : MonoBehaviour
         StartCoroutine(KeepFiringLaser(fireDirection));
 
         lastFireTime = Time.time;
+        fireCount--; // 使用次数减一
 
-        // 调用 HookSystem 的方法增加温度
+        // 初始热量
         hookSystem.AddHeat(fireHeat);
     }
 
@@ -185,6 +199,9 @@ public class LaserWeapon : MonoBehaviour
 
             UpdateLaserLineProgressive(direction, currentLength);
             ApplyLaserEffectWithinLength(direction, currentLength);
+
+            // 持续热量增加
+            hookSystem.AddHeat(continuousFireHeatRate * Time.deltaTime);
 
             fireTimer += Time.deltaTime;
             yield return new WaitForEndOfFrame();
@@ -239,6 +256,13 @@ public class LaserWeapon : MonoBehaviour
 
         DrawLine(screenStart, screenEnd, currentColor, 2f);
         DrawCircle(screenEnd, aimTargetRadius, currentColor);
+
+        // 显示剩余使用次数
+        GUI.Label(new Rect(10, 10, 250, 30), $"Laser Ammo: {fireCount}/{maxCount}", new GUIStyle
+        {
+            fontSize = 16,
+            normal = new GUIStyleState { textColor = Color.red }
+        });
     }
 
     private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)
@@ -279,5 +303,15 @@ public class LaserWeapon : MonoBehaviour
         {
             UpdateLaserAppearance();
         }
+        
+        // 确保编辑器中设置的值合理
+        maxCount = Mathf.Max(1, maxCount);
+        fireCount = Mathf.Clamp(fireCount, 0, maxCount);
     }
-}
+    
+    // 增加激光使用次数
+    public void AddcurrentLaserCount(int amount)
+    {
+        fireCount = Mathf.Min(fireCount + amount, maxCount);
+    }
+}    

@@ -26,7 +26,7 @@ public class EnvironmentalEventManager : MonoBehaviour
             {
                 if (col.CompareTag("Player"))
                 {
-                    // 直接调用HookSystem的TakeDamage方法（无需PlayerHealth类）
+                    // 直接调用HookSystem的TakeDamage方法
                     float damage = baseDamage * intensity * Time.deltaTime; // 按时间计算伤害
                     HookSystem.Instance.TakeDamage(damage);
                 }

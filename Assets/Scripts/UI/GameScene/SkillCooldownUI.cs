@@ -91,7 +91,6 @@ public class SkillCooldownUI : MonoBehaviour
         }
         else
         {
-            // 根据冷却进度计算颜色和透明度
             float alpha = Mathf.Lerp(cooldownAlpha, 1f, 1 - cooldownPercentage);
             icon.color = new Color(
                 originalColor.r * (0.5f + cooldownPercentage * 0.5f),

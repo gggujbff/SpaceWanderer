@@ -366,19 +366,15 @@ public class HookSystem : MonoBehaviour
 
     private void UpdateSpeedSmoothing(float deltaTime)
     {
-        // 1. 转向时的平滑过渡（使用 switchDirSmoothSpeed）
         float rotateStep = switchDirSmoothSpeed * deltaTime;
         currentRotateSpeed = Mathf.MoveTowards(currentRotateSpeed, targetRotateSpeed, rotateStep);
 
-        // 2. 仅保留发射速度的平滑过渡
         float launchStep = rotationSmoothSpeed * deltaTime;
         float targetLaunch = isAccelerating ? accelerateLaunchSpeed : baseLaunchSpeed;
         currentLaunchSpeed = Mathf.MoveTowards(currentLaunchSpeed, targetLaunch, launchStep);
 
-        // 3. 回收速度直接使用目标值（移除平滑过渡）
         currentRetrieveSpeed = CalculateTargetRetrieveSpeed();
 
-        // 检查转向是否完成
         if (isSwitchingDir && Mathf.Abs(currentRotateSpeed - targetRotateSpeed) < 0.1f)
         {
             isSwitchingDir = false;
@@ -387,7 +383,7 @@ public class HookSystem : MonoBehaviour
     
     private float CalculateTargetRetrieveSpeed()
     {
-        float massResistance = 1 + (grabbedMass * grabbedMass); // 质量平方作为阻力
+        float massResistance = 1 + (grabbedMass * grabbedMass); 
     
         float baseSpeed = isAccelerating ? accelerateRetrieveSpeed : baseRetrieveSpeed;
     

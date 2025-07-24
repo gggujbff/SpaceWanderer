@@ -17,7 +17,7 @@ public class Missile : MonoBehaviour
     [Tooltip("导弹半径")]
     public float capsuleRadius = 0.3f;
 
-    private List<string> destroyableTags = new List<string> { "Obstacle" , "Energy"};
+    private List<string> destroyableTags = new List<string> { "Obstacle" , "Collectible"};
 
     // 胶囊体方向（水平或垂直）
     private CapsuleDirection2D capsuleDirection = CapsuleDirection2D.Horizontal;

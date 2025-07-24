@@ -3,15 +3,14 @@ using UnityEngine;
 public class HookTipCollisionHandler : MonoBehaviour
 {
     public HookSystem hookSystem;
-    public float heatPerUnitMass = 1f; // 每单位质量产生的热量
-    public float maxGrabbableMass = 5f; // 最大可钩取质量
+    public float heatPerUnitMass = 1f;
+    public float maxGrabbableMass = 5f;
     
     [Header("调试选项")]
     public bool logCollisions = true;
 
-    private bool hasGrabbedObject = false; // 标记是否已钩取物体（确保单次只钩一个）
+    private bool hasGrabbedObject = false;
 
-    // 处理触发器碰撞（针对收集物）
     private void OnTriggerEnter2D(Collider2D other)
     {
         // 仅在Launching状态且未钩取物体时检测碰撞
@@ -92,10 +91,8 @@ public class HookTipCollisionHandler : MonoBehaviour
             collider.enabled = false;
         }
         
-        // 设置为钩爪的子物体，保持世界位置不变
         collectibleObj.transform.SetParent(transform, true);
         
-        // 禁用物理模拟
         rb.isKinematic = true;
         rb.velocity = Vector2.zero;
         
@@ -105,7 +102,6 @@ public class HookTipCollisionHandler : MonoBehaviour
         ApplyHookEffects(rb);
     }
 
-    // 处理障碍物碰撞
     private void HandleObstacleCollision(GameObject obstacleObj)
     {
         var obstacle = obstacleObj.GetComponent<MovingObstacle>();
@@ -122,26 +118,21 @@ public class HookTipCollisionHandler : MonoBehaviour
             return;
         }
 
-        // 检查质量限制
         if (rb.mass > maxGrabbableMass)
         {
             if (logCollisions)
             {
                 //Debug.Log($"障碍物质量 {rb.mass} 超过限制 {maxGrabbableMass}，开始收回钩爪: {obstacleObj.name}");
             }
-            // 质量过大时不钩取，但触发收回钩爪
             hookSystem.RetrieveHook();
             return;
         }
 
-        // 标记已钩取物体，防止重复钩取
         hasGrabbedObject = true;
 
-        // 处理钩取逻辑
         obstacle.transform.SetParent(transform, true); // 保持世界位置
         obstacle.SetVelocity(Vector2.zero); // 停止障碍物运动
         
-        // 禁用障碍物的碰撞体
         var collider = obstacleObj.GetComponent<Collider2D>();
         if (collider != null)
         {
@@ -164,7 +155,6 @@ public class HookTipCollisionHandler : MonoBehaviour
     // 回收完成后重置状态（关键：重置已钩取标记，允许下次钩取）
     public void OnRetrieveComplete()
     {
-        // 处理收集到的物体
         CollectibleObject[] collectedObjects = GetComponentsInChildren<CollectibleObject>(true);
         foreach (var collectible in collectedObjects)
         {

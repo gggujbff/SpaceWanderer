@@ -10,9 +10,13 @@ public class CollectibleObject : MonoBehaviour
     
     [Tooltip("可收集的分数值")]
     public int scoreValue = 10;
+
+    [Tooltip("可收集道具数量")]
+    public int missileCount = 0;  // 修正变量名（规范驼峰命名）
+    public int laserCount = 0;    // 修正变量名
     
-    [Tooltip("可收集道具")]
-    public string propTag;
+    [HideInInspector] public MissileLauncher missileLauncher;
+    [HideInInspector] public LaserWeapon laserWeapon;  // 修正变量名（与类名一致）
     
     [Tooltip("质量")]
     public float mass = 1f;
@@ -22,11 +26,14 @@ public class CollectibleObject : MonoBehaviour
 
     [Header("碰撞伤害设置")]
     [Tooltip("伤害系数（用于调控动量伤害的平衡）")]
-    [Range(0.1f, 2f)] public float damageCoefficient = 0.5f; // 原伤害变量改为系数
+    [Range(0.1f, 2f)] public float damageCoefficient = 0.5f;
 
     private Rigidbody2D rb;
     private bool pendingDestroy = false;
-    private bool hasCollidedWithPlayer = false; // 防止单次碰撞多次触发伤害
+    private bool hasCollidedWithPlayer = false;
+    // 新增：存储玩家身上的武器组件（避免重复查找）
+    private MissileLauncher playerMissileLauncher;
+    private LaserWeapon playerLaserWeapon;
 
     private void Start()
     {
@@ -39,47 +46,48 @@ public class CollectibleObject : MonoBehaviour
         }
 
         currentState = CollectibleState.FreeFloating;
+
+        // 初始化：找到玩家身上的武器组件（假设玩家标签为"Player"）
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            playerMissileLauncher = player.GetComponent<MissileLauncher>();
+            playerLaserWeapon = player.GetComponent<LaserWeapon>();
+        }
+        else
+        {
+            Debug.LogWarning("场景中未找到标签为'Player'的物体，无法初始化武器引用");
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        // 检测与飞船（Player）的碰撞
         if (collision.gameObject.CompareTag("Player") && 
             !isDestroyedState() && 
             !hasCollidedWithPlayer)
         {
-            hasCollidedWithPlayer = true; // 标记已碰撞，避免帧内多次触发
+            hasCollidedWithPlayer = true;
             CalculateAndApplyPlayerDamage(collision);
+            // 碰撞玩家时直接收集（如果需要在抓取后收集，可移到OnHarvested方法）
+            CollectForPlayer();
         }
     }
 
     private void OnCollisionExit2D(Collision2D collision)
     {
-        // 离开碰撞时重置标记，允许再次碰撞触发伤害
         if (collision.gameObject.CompareTag("Player"))
         {
             hasCollidedWithPlayer = false;
         }
     }
 
-    /// <summary>
-    /// 计算并对飞船施加伤害（基于动量）
-    /// </summary>
     private void CalculateAndApplyPlayerDamage(Collision2D collision)
     {
-        // 相对速度大小（碰撞瞬间的相对速度）
         float relativeSpeed = collision.relativeVelocity.magnitude;
-        
-        // 动量 = 质量 × 速度（使用自身质量和相对速度计算）
         float momentum = mass * relativeSpeed;
-        
-        // 最终伤害 = 动量 × 伤害系数（系数用于平衡整体伤害数值）
         float damage = momentum * damageCoefficient;
-        
-        // 对飞船造成伤害
         HookSystem.Instance.TakeDamage(damage);
         
-        // 可选：自身也受到碰撞影响（例如被弹开）
         if (rb != null && !rb.isKinematic)
         {
             rb.AddForce(-collision.relativeVelocity * 0.1f, ForceMode2D.Impulse);
@@ -127,14 +135,14 @@ public class CollectibleObject : MonoBehaviour
 
         if (pendingDestroy)
         {
-            int destroyScore = Mathf.Max(1, scoreValue);
-            HookSystem.Instance.AddScore(destroyScore);
+            HookSystem.Instance.AddScore(scoreValue);
             DestroyObject();
             return;
         }
 
         currentState = CollectibleState.Harvested;
 
+        // 收集分数
         switch (subType)
         {
             case CollectibleSubType.Resource:
@@ -147,7 +155,28 @@ public class CollectibleObject : MonoBehaviour
                 break;
         }
 
+        // 收集武器数量（核心修改）
+        CollectForPlayer();
+
         Destroy(gameObject);
+    }
+
+    // 新增：收集逻辑封装（碰撞或抓取后调用）
+    private void CollectForPlayer()
+    {
+        // 增加导弹数量
+        if (missileCount > 0 && playerMissileLauncher != null)
+        {
+            playerMissileLauncher.AddcurrentMissileCount(missileCount);
+            Debug.Log($"收集了 {missileCount} 枚导弹，当前总数：{playerMissileLauncher.currentMissileCount}");
+        }
+
+        // 增加激光使用次数
+        if (laserCount > 0 && playerLaserWeapon != null)
+        {
+            playerLaserWeapon.AddcurrentLaserCount(laserCount);
+            //Debug.Log($"收集了 {laserCount} 次激光使用次数，当前总数：{playerLaserWeapon.fireCount}");
+        }
     }
 
     public void DestroyObject()
