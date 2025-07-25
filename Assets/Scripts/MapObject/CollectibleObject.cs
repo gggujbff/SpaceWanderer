@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections;
 
 public class CollectibleObject : MonoBehaviour
 {
@@ -35,7 +36,6 @@ public class CollectibleObject : MonoBehaviour
     public float initialAngularSpeed = 0f;
     private bool initialRotationApplied = false;
 
-
     [Tooltip("销毁所需的最小相对动量（碰撞瞬间检测）")]
     public float destroyedMomentum = 10f;
 
@@ -57,6 +57,7 @@ public class CollectibleObject : MonoBehaviour
     private LaserWeapon playerLaserWeapon;
     private NetLauncher playerNetLauncher;
     private bool initialVelocityApplied = false; // 确保初始速度只应用一次
+    private bool velocitySetBySpawner = false;
 
     private void Start()
     {
@@ -64,11 +65,10 @@ public class CollectibleObject : MonoBehaviour
         if (rb != null)
         {
             rb.mass = mass;
-            rb.gravityScale = 0f; // 失重环境
-            rb.drag = 0f;         // 无阻力
+            rb.gravityScale = 0f;
+            rb.drag = 0f;
             rb.angularDrag = 0.2f;
 
-            // 障碍物设置物理材质
             if (IsObstacleType())
             {
                 rb.sharedMaterial = new PhysicsMaterial2D
@@ -78,8 +78,13 @@ public class CollectibleObject : MonoBehaviour
                 };
             }
 
-            // 应用初始速度（由Spawner设置）
-            ApplyInitialVelocity();
+            // 注意：如果是通过Spawner生成的物体，会调用SetInitialVelocity
+            // 我们在那里设置velocitySetBySpawner为true，避免重复设置
+            if (!velocitySetBySpawner && initialSpeed > 0)
+            {
+                // 场景中手动放置的物体走这里
+                StartCoroutine(DelayedApplyVelocity());
+            }
         }
         else
         {
@@ -124,14 +129,28 @@ public class CollectibleObject : MonoBehaviour
         }
     }
 
-    // 外部设置初始速度的方法
+    // 外部设置初始速度的方法 - 修改为通过协程延迟应用
     public void SetInitialVelocity(float speed, Vector2 direction)
     {
-        if (rb != null && !initialVelocityApplied)
+        initialSpeed = speed;
+        initialDirection = direction.normalized;
+        velocitySetBySpawner = true; // 标记为由Spawner设置
+        
+        StartCoroutine(DelayedApplyVelocity());
+    }
+
+    // 新增：延迟应用速度的协程
+    private IEnumerator DelayedApplyVelocity()
+    {
+        // 等待一帧，确保所有初始化完成
+        yield return null;
+        
+        // 应用速度
+        if (rb != null)
         {
-            initialSpeed = speed;
-            initialDirection = direction.normalized;
-            ApplyInitialVelocity(); // 立即应用速度
+            Vector2 finalVelocity = initialDirection * initialSpeed;
+            rb.velocity = finalVelocity;
+            Debug.Log($"[{Time.time}] 延迟应用速度: {finalVelocity} (物体: {gameObject.name})");
         }
     }
 
@@ -409,5 +428,4 @@ public class CollectibleObject : MonoBehaviour
             Debug.Log($"{gameObject.name} 初始旋转角速度: {rb.angularVelocity}");
         }
     }
-
 }

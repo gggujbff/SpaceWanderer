@@ -16,21 +16,21 @@ public class HookSystem : MonoBehaviour
 
     [Header("绳索设置")]
     [Tooltip("绳索宽度")]
-    public float ropeWidth = 0.4f; // 增大宽度
+    public float ropeWidth = 0.4f;
     [Tooltip("绳索材质")]
-    public Material ropeMaterial; // 绳索材质
+    public Material ropeMaterial;
     
     [HideInInspector]public Color ropeColor = Color.yellow;
     [HideInInspector]public string ropeSortingLayer = "Default";
-    [HideInInspector]public int ropeSortingOrder = 50; //确保在默认层级最上层
+    [HideInInspector]public int ropeSortingOrder = 50;
 
     [Header("基础属性")]
     [Tooltip("最大长度")]
     public float maxLength = 10f;
     [Tooltip("中心偏移距离")]
-    public float standbyDistance = 3f; // 增大初始待机距离，确保初始可见
+    public float standbyDistance = 3f;
     [Tooltip("基础旋转速度")]
-    public float baseRotateSpeed = 30f;
+    public float baseRotateSpeed = 90f;
     [Tooltip("发射力量")]
     public float baseLaunchSpeed = 10f;
     [Tooltip("回收力量")]
@@ -38,7 +38,7 @@ public class HookSystem : MonoBehaviour
     
     [Header("加速速度")]
     [Tooltip("旋转加速速度")]
-    public float accelerateRotateSpeed = 70f; 
+    public float accelerateRotateSpeed = 180f; 
     [Tooltip("钩爪发射加速速度")]
     public float accelerateLaunchSpeed = 18f;  
     [Tooltip("钩爪回收加速速度")]
@@ -46,19 +46,19 @@ public class HookSystem : MonoBehaviour
 
     [Header("过热参数")]
     [Tooltip("初始温度")]
-    public float initialTemperature = 0f; // 初始温度
+    public float initialTemperature = 0f;
     [Tooltip("过热阈值温度")]
-    public float overheatThreshold = 100f; // 过热阈值温度
+    public float overheatThreshold = 100f;
     [Tooltip("过热后最大运行时间")]
-    public float maxOverheatTime = 5f; // 过热后最大运行时间
+    public float maxOverheatTime = 5f;
     [Tooltip("旋转方向切换产生的热量")]
-    public float rotateSwitchHeat = 5f; // 旋转方向切换产生的热量
+    public float rotateSwitchHeat = 5f;
     [Tooltip("加速时每秒产生的热量")]
-    public float accelerateHeatPerSecond = 8f; // 加速时放热（直接控制）
+    public float accelerateHeatPerSecond = 8f;
     [Tooltip("正常情况下每秒产生的热量")]
-    public float normalHeatPerSecond = 2f; // 新增：常态放热参数
+    public float normalHeatPerSecond = 2f;
     [Tooltip("冷却速率")]
-    public float coolingRate = 10f; // 新增：冷却速率参数
+    public float coolingRate = 10f;
 
     [Header("冷却CD")]
     public float rotateSwitchCD = 1f;
@@ -89,15 +89,15 @@ public class HookSystem : MonoBehaviour
     [HideInInspector] public RotationDir currentDir = RotationDir.Clockwise;
     [HideInInspector] public float currentLength = 0f;
     [HideInInspector] public float currentRotation = 0f;
-    [HideInInspector] public float currentTemperature; // 当前温度
+    [HideInInspector] public float currentTemperature;
     [HideInInspector] public float currentHealth;
-    [HideInInspector] public OverheatState currentOverheatState = OverheatState.Normal; // 当前过热状态
-    [HideInInspector] public float currentOverheatTime = 0f; // 当前过热时间
-    [HideInInspector] public float spaceShipVelocity = 0f; // 飞船速度
+    [HideInInspector] public OverheatState currentOverheatState = OverheatState.Normal;
+    [HideInInspector] public float currentOverheatTime = 0f;
+    [HideInInspector] public float spaceShipVelocity = 0f;
 
     private float currentRotateSpeed; // 当前旋转速度（带方向）
-    private float currentLaunchSpeed; // 当前发射速度
-    private float currentRetrieveSpeed; // 当前回收速度
+    private float currentLaunchSpeed;
+    private float currentRetrieveSpeed;
     private int currentScore = 0;
     private bool isAccelerating = false;
     private float rotateSwitchCDTimer = 0f;
@@ -274,10 +274,13 @@ public class HookSystem : MonoBehaviour
     private void StartSwitchRotationDir()
     {
         isSwitchingDir = true;
-        // 切换方向时，计算新的目标旋转速度（反向）
-        targetRotateSpeed = -targetRotateSpeed; 
+        
+        // 修改：方向切换时保持当前加速状态
+        float targetSpeed = isAccelerating ? (baseRotateSpeed + accelerateRotateSpeed) : baseRotateSpeed;
+        targetRotateSpeed = targetSpeed * (currentDir == RotationDir.Clockwise ? -1 : 1);
+        
         currentDir = currentDir == RotationDir.Clockwise ? RotationDir.CounterClockwise : RotationDir.Clockwise;
-        currentTemperature += rotateSwitchHeat; // 旋转切换产生热量（保留原逻辑）
+        currentTemperature += rotateSwitchHeat;
         rotateSwitchCDTimer = rotateSwitchCD;
     }
 
@@ -300,8 +303,8 @@ public class HookSystem : MonoBehaviour
                 break;
         }
 
-        // 计算热量变化（核心修改部分）
-        float heatGenerationPower = CalculateHeatGenerationPower(); // 改用新的热量计算方式
+        // 计算热量变化
+        float heatGenerationPower = CalculateHeatGenerationPower();
         float heatDissipationPower = CalculateHeatDissipationPower();
         float heatChange = (heatGenerationPower - heatDissipationPower) * deltaTime;
         float temperatureChange = heatChange / c;
@@ -334,12 +337,17 @@ public class HookSystem : MonoBehaviour
                 break;
         }
 
-        float targetRotate = isAccelerating ? accelerateRotateSpeed : baseRotateSpeed;
+        // 修改：根据加速度计算目标旋转速度
+        float targetSpeed = baseRotateSpeed;
+        if (isAccelerating)
+        {
+            targetSpeed += accelerateRotateSpeed;
+        }
 
         // 更新旋转目标速度（考虑方向）
         if (!isSwitchingDir) // 转向过程中不更新目标速度
         {
-            targetRotateSpeed = targetRotate * (currentDir == RotationDir.Clockwise ? 1 : -1);
+            targetRotateSpeed = targetSpeed * (currentDir == RotationDir.Clockwise ? 1 : -1);
         }
     }
 
@@ -364,10 +372,24 @@ public class HookSystem : MonoBehaviour
         return deltaTemperature * k;
     }
 
+    // 修改：基于加速度的平滑过渡算法
     private void UpdateSpeedSmoothing(float deltaTime)
     {
-        float rotateStep = switchDirSmoothSpeed * deltaTime;
-        currentRotateSpeed = Mathf.MoveTowards(currentRotateSpeed, targetRotateSpeed, rotateStep);
+        // 计算当前帧允许的最大速度变化（基于加速度）
+        float maxSpeedChange = (isSwitchingDir ? switchDirSmoothSpeed : rotationSmoothSpeed) * deltaTime;
+        
+        // 计算当前速度与目标速度的差值
+        float speedDiff = targetRotateSpeed - currentRotateSpeed;
+        
+        // 平滑过渡到目标速度
+        if (Mathf.Abs(speedDiff) > maxSpeedChange)
+        {
+            currentRotateSpeed += Mathf.Sign(speedDiff) * maxSpeedChange;
+        }
+        else
+        {
+            currentRotateSpeed = targetRotateSpeed;
+        }
 
         float launchStep = rotationSmoothSpeed * deltaTime;
         float targetLaunch = isAccelerating ? accelerateLaunchSpeed : baseLaunchSpeed;
