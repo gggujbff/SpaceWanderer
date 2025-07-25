@@ -107,7 +107,7 @@ Rigidbody2D:
   m_Interpolate: 0
   m_SleepingMode: 1
   m_CollisionDetection: 0
-  m_Constraints: 7
+  m_Constraints: 3
 --- !u!114 &1314352879143196367
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -117,17 +117,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 8618830512138284384}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c32e813b766f48639b4e311d0448ce9f, type: 3}
+  m_Script: {fileID: 11500000, guid: 9b89975505ea4c6da708becfa2699d52, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  health: 100
-  damageCoefficient: 0.8
-  mass: 99999
-  destroyedMomentum: 1
-  velocity: {x: 0, y: 0}
-  fragmentPrefab: {fileID: 0}
+  subType: 0
+  currentState: 0
+  scoreValue: 10
+  missileCount: 0
+  laserCount: 0
+  netCount: 0
+  mass: 1
+  initialSpeed: 0
+  initialDirection: {x: 1, y: 0}
+  destroyedMomentum: 9999
+  damageCoefficient: 0.5
   restitution: 0.6
   friction: 0.3
+  fragmentPrefab: {fileID: 0}
+  missileLauncher: {fileID: 0}
+  laserWeapon: {fileID: 0}
 --- !u!60 &8113707252466885389
 PolygonCollider2D:
   m_ObjectHideFlags: 0

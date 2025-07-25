@@ -2,40 +2,61 @@ using UnityEngine;
 
 public class CollectibleObject : MonoBehaviour
 {
-    public enum CollectibleSubType { Resource, Prop, Garbage, CollectibleObstacle }
+    // 物体类型枚举
+    public enum CollectibleSubType { Resource, Prop, Garbage, CollectibleObstacle, RegularObstacle }
+    // 物体状态枚举
     public enum CollectibleState { FreeFloating, AttachedToObstacle, Grabbed, Colliding, Destroyed, Harvested }
 
-    [Header("可采集属性")]
+    [Header("基础属性")]
     public CollectibleSubType subType;
+    public CollectibleState currentState;
     
-    [Tooltip("可收集的分数值")]
+    [Tooltip("收集后获得的分数")]
     public int scoreValue = 10;
 
-    [Tooltip("可收集道具数量")]
+    [Tooltip("收集后获得的道具数量")]
     public int missileCount = 0; 
     public int laserCount = 0; 
     public int netCount = 0;  
-    
-    [HideInInspector] public MissileLauncher missileLauncher;
-    [HideInInspector] public LaserWeapon laserWeapon;  // 修正变量名（与类名一致）
-    
-    [Tooltip("质量")]
+
+    [Header("物理属性")]
+    [Tooltip("物体质量")]
     public float mass = 1f;
+    
+    [Header("初始速度设置")]
+    [Tooltip("初始速度大小（由Spawner控制）")]
+    public float initialSpeed = 0f;
+    
+    [Tooltip("初始速度方向（由Spawner控制）")]
+    public Vector2 initialDirection = Vector2.right;
+    
+    [Header("初始旋转设置")]
+    [Tooltip("初始旋转角速度（正负方向随机）")]
+    public float initialAngularSpeed = 0f;
+    private bool initialRotationApplied = false;
+
+
+    [Tooltip("销毁所需的最小相对动量（碰撞瞬间检测）")]
     public float destroyedMomentum = 10f;
-    public Vector2 velocity;
-    public CollectibleState currentState;
 
     [Header("碰撞伤害设置")]
-    [Tooltip("伤害系数（用于调控动量伤害的平衡）")]
     [Range(0.1f, 2f)] public float damageCoefficient = 0.5f;
 
+    [Header("障碍物属性（仅对障碍物类型生效）")]
+    [Range(0f, 1f)] public float restitution = 0.6f; // 弹性系数
+    [Range(0f, 1f)] public float friction = 0.3f;   // 摩擦系数
+    public GameObject fragmentPrefab; // 销毁时生成的碎片
+
+    [HideInInspector] public MissileLauncher missileLauncher;
+    [HideInInspector] public LaserWeapon laserWeapon;
+    
     private Rigidbody2D rb;
-    private bool pendingDestroy = false;
+    // 移除pendingDestroy标记（不再需要延迟销毁）
     private bool hasCollidedWithPlayer = false;
-    // 新增：存储玩家身上的武器组件（避免重复查找）
     private MissileLauncher playerMissileLauncher;
     private LaserWeapon playerLaserWeapon;
     private NetLauncher playerNetLauncher;
+    private bool initialVelocityApplied = false; // 确保初始速度只应用一次
 
     private void Start()
     {
@@ -43,13 +64,31 @@ public class CollectibleObject : MonoBehaviour
         if (rb != null)
         {
             rb.mass = mass;
-            rb.velocity = velocity;
-            rb.gravityScale = 0f;
+            rb.gravityScale = 0f; // 失重环境
+            rb.drag = 0f;         // 无阻力
+            rb.angularDrag = 0.2f;
+
+            // 障碍物设置物理材质
+            if (IsObstacleType())
+            {
+                rb.sharedMaterial = new PhysicsMaterial2D
+                {
+                    bounciness = restitution,
+                    friction = friction
+                };
+            }
+
+            // 应用初始速度（由Spawner设置）
+            ApplyInitialVelocity();
+        }
+        else
+        {
+            Debug.LogError($"{gameObject.name} 缺少Rigidbody2D组件！");
         }
 
         currentState = CollectibleState.FreeFloating;
 
-        // 初始化：找到玩家身上的武器组件（假设玩家标签为"Player"）
+        // 初始化玩家武器引用
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
         {
@@ -59,20 +98,97 @@ public class CollectibleObject : MonoBehaviour
         }
         else
         {
-            Debug.LogWarning("场景中未找到标签为'Player'的物体，无法初始化武器引用");
+            Debug.LogWarning("场景中未找到标签为'Player'的物体");
+        }
+
+        // 验证Tag设置
+        if (!gameObject.CompareTag("Collectible") && 
+            !gameObject.CompareTag("Player") && 
+            !gameObject.CompareTag("Hook"))
+        {
+            Debug.LogWarning($"{gameObject.name} 的Tag未设置为'Collectible'，可能无法参与碰撞逻辑");
+        }
+        
+        ApplyInitialRotation();
+    }
+
+    // 应用初始速度（仅一次）
+    private void ApplyInitialVelocity()
+    {
+        if (rb != null && !initialVelocityApplied)
+        {
+            Vector2 finalVelocity = initialDirection.normalized * initialSpeed;
+            rb.velocity = finalVelocity;
+            initialVelocityApplied = true;
+            Debug.Log($"{gameObject.name} 初始速度: {finalVelocity}");
+        }
+    }
+
+    // 外部设置初始速度的方法
+    public void SetInitialVelocity(float speed, Vector2 direction)
+    {
+        if (rb != null && !initialVelocityApplied)
+        {
+            initialSpeed = speed;
+            initialDirection = direction.normalized;
+            ApplyInitialVelocity(); // 立即应用速度
         }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.CompareTag("Player") && 
-            !isDestroyedState() && 
-            !hasCollidedWithPlayer)
+        if (isDestroyedState()) return;
+
+        // 基础碰撞日志（必看调试信息）
+        Debug.Log($"=== 碰撞发生 ===");
+        Debug.Log($"碰撞物体1: {gameObject.name} (Tag: {gameObject.tag})");
+        Debug.Log($"碰撞物体2: {collision.gameObject.name} (Tag: {collision.gameObject.tag})");
+
+        // 碰撞玩家
+        if (collision.gameObject.CompareTag("Player") && !hasCollidedWithPlayer)
         {
+            Debug.Log($"{gameObject.name} 碰撞玩家");
             hasCollidedWithPlayer = true;
             CalculateAndApplyPlayerDamage(collision);
-            // 碰撞玩家时直接收集（如果需要在抓取后收集，可移到OnHarvested方法）
-            CollectForPlayer();
+            
+            // 障碍物应用碰撞反弹
+            if (IsObstacleType())
+            {
+                ApplyPhysicsCollision(collision);
+            }
+            
+            // 可收集物触发收集
+            if (IsCollectibleType())
+            {
+                CollectForPlayer();
+            }
+        }
+        // 碰撞钩爪
+        else if (collision.gameObject.CompareTag("Hook"))
+        {
+            Debug.Log($"{gameObject.name} 碰撞钩爪");
+            currentState = CollectibleState.Colliding;
+        }
+        // 碰撞其他Collectible（仅通过Tag判断）
+        else if (collision.gameObject.CompareTag("Collectible"))
+        {
+            Debug.Log($"{gameObject.name} 碰撞Collectible物体: {collision.gameObject.name}");
+            // 获取对方的CollectibleObject组件
+            if (collision.gameObject.TryGetComponent<CollectibleObject>(out CollectibleObject otherCollectible))
+            {
+                // 1. 先应用物理碰撞计算速度影响
+                ApplyPhysicsCollision(collision);
+                // 2. 再检查动量是否超过阈值（此时速度已更新）
+                CheckCollisionMomentum(otherCollectible, collision);
+            }
+            else
+            {
+                Debug.LogError($"{collision.gameObject.name} 是'Collectible' Tag但未挂载CollectibleObject组件！");
+            }
+        }
+        else
+        {
+            Debug.Log($"未处理的碰撞类型: {collision.gameObject.tag}");
         }
     }
 
@@ -82,37 +198,101 @@ public class CollectibleObject : MonoBehaviour
         {
             hasCollidedWithPlayer = false;
         }
+
+        // 移除原有的pendingDestroy销毁逻辑
     }
 
+    // 修正：通过参数传入collision，解决无法解析的问题
+    private void CheckCollisionMomentum(CollectibleObject other, Collision2D collision)
+    {
+        if (rb == null || other.rb == null)
+        {
+            Debug.LogError("缺少Rigidbody2D组件，无法计算动量");
+            return;
+        }
+
+        // 使用传入的collision参数获取相对速度（此时已完成速度计算）
+        float relativeSpeed = collision.relativeVelocity.magnitude;
+        
+        // 计算有效动量（双方质量平均值 × 相对速度）
+        float averageMass = (mass + other.mass) / 2f;
+        float effectiveMomentum = averageMass * relativeSpeed;
+
+        // 详细调试信息
+        Debug.Log($"--- 动量计算 ---");
+        Debug.Log($"{gameObject.name} 速度: {rb.velocity.magnitude:F2}, 质量: {mass}");
+        Debug.Log($"{other.gameObject.name} 速度: {other.rb.velocity.magnitude:F2}, 质量: {other.mass}");
+        Debug.Log($"相对速度: {relativeSpeed:F2}, 平均质量: {averageMass:F2}");
+        Debug.Log($"有效动量: {effectiveMomentum:F2}, 阈值: {destroyedMomentum:F2}");
+
+        // 判断是否超过销毁阈值：仅当前物体超过时才销毁自己，不影响其他物体
+        if (effectiveMomentum >= destroyedMomentum)
+        {
+            Debug.Log($">>> 动量达标！{gameObject.name} 立即销毁 <<<");
+            DestroyObject(); // 速度计算完成后立即销毁
+        }
+    }
+
+    // 计算对玩家的碰撞伤害
     private void CalculateAndApplyPlayerDamage(Collision2D collision)
     {
         float relativeSpeed = collision.relativeVelocity.magnitude;
         float momentum = mass * relativeSpeed;
         float damage = momentum * damageCoefficient;
+        Debug.Log($"{gameObject.name} 对玩家造成伤害: {damage:F2}");
         HookSystem.Instance.TakeDamage(damage);
-        
-        if (rb != null && !rb.isKinematic)
-        {
-            rb.AddForce(-collision.relativeVelocity * 0.1f, ForceMode2D.Impulse);
-        }
     }
 
+    // 物理碰撞处理（先计算速度影响）
+    private void ApplyPhysicsCollision(Collision2D collision)
+    {
+        Rigidbody2D otherRb = collision.rigidbody;
+        if (rb == null || otherRb == null || isDestroyedState()) return;
+
+        ContactPoint2D contact = collision.contacts[0];
+        Vector2 normal = contact.normal;
+        Vector2 tangent = new Vector2(-normal.y, normal.x);
+
+        // 计算碰撞后速度（考虑弹性和摩擦）
+        float thisNormalSpeed = Vector2.Dot(rb.velocity, normal);
+        float otherNormalSpeed = Vector2.Dot(otherRb.velocity, normal);
+        float thisTangentSpeed = Vector2.Dot(rb.velocity, tangent);
+        float otherTangentSpeed = Vector2.Dot(otherRb.velocity, tangent);
+
+        float massSum = mass + otherRb.mass;
+        float thisNewNormalSpeed = (thisNormalSpeed * (mass - restitution * otherRb.mass) + 
+                                    2 * restitution * otherRb.mass * otherNormalSpeed) / massSum;
+        float otherNewNormalSpeed = (otherNormalSpeed * (otherRb.mass - restitution * mass) + 
+                                     2 * restitution * mass * thisNormalSpeed) / massSum;
+
+        float thisNewTangentSpeed = Mathf.Lerp(thisTangentSpeed, otherTangentSpeed, friction);
+        float otherNewTangentSpeed = Mathf.Lerp(otherTangentSpeed, thisTangentSpeed, friction);
+
+        rb.velocity = normal * thisNewNormalSpeed + tangent * thisNewTangentSpeed;
+        otherRb.velocity = normal * otherNewNormalSpeed + tangent * otherNewTangentSpeed;
+
+        ApplyAntiStickForce(rb, otherRb);
+    }
+
+    // 防止碰撞粘连
+    private void ApplyAntiStickForce(Rigidbody2D rb1, Rigidbody2D rb2)
+    {
+        Vector2 randomDir = Random.insideUnitCircle.normalized * 0.02f;
+        rb1?.AddForce(randomDir, ForceMode2D.Impulse);
+        rb2?.AddForce(-randomDir, ForceMode2D.Impulse);
+    }
+
+    // 钩爪碰撞处理
     public void OnHookCollision(HookSystem hook)
     {
         if (isDestroyedState()) return;
-
         currentState = CollectibleState.Colliding;
-        float hookMomentum = hook.CurrentLaunchSpeed * hook.hookTipMass;
-
-        if (hookMomentum >= destroyedMomentum)
-        {
-            pendingDestroy = true;
-        }
     }
 
+    // 被钩爪抓取
     public bool OnGrabbed(HookTipCollisionHandler hookTip)
     {
-        if (isDestroyedState()) return false;
+        if (isDestroyedState() || !IsCollectibleType()) return false;
 
         if (currentState == CollectibleState.FreeFloating || currentState == CollectibleState.Colliding)
         {
@@ -132,19 +312,14 @@ public class CollectibleObject : MonoBehaviour
         return false;
     }
 
+    // 被收集处理
     public void OnHarvested()
     {
         if (isDestroyedState()) return;
 
-        if (pendingDestroy)
-        {
-            HookSystem.Instance.AddScore(scoreValue);
-            DestroyObject();
-            return;
-        }
-
         currentState = CollectibleState.Harvested;
 
+        // 根据类型添加分数
         switch (subType)
         {
             case CollectibleSubType.Resource:
@@ -157,56 +332,82 @@ public class CollectibleObject : MonoBehaviour
                 break;
         }
 
-        // 收集武器数量（核心修改）
-        CollectForPlayer();
+        // 收集道具
+        if (IsCollectibleType())
+        {
+            CollectForPlayer();
+        }
 
         Destroy(gameObject);
     }
 
+    // 给玩家添加道具
     private void CollectForPlayer()
     {
         if (missileCount > 0 && playerMissileLauncher != null)
-        {
             playerMissileLauncher.AddcurrentMissileCount(missileCount);
-        }
-
-        if (laserCount > 0 && playerLaserWeapon != null)
-        {
-            playerLaserWeapon.AddcurrentLaserCount(laserCount);
-        }
         
-        if (netCount > 0 && playerLaserWeapon != null)
-        {
+        if (laserCount > 0 && playerLaserWeapon != null)
+            playerLaserWeapon.AddcurrentLaserCount(laserCount);
+        
+        if (netCount > 0 && playerNetLauncher != null)
             playerNetLauncher.AddcurrentNetCount(netCount);
-        }
     }
 
+    // 销毁物体
     public void DestroyObject()
     {
         currentState = CollectibleState.Destroyed;
-        Destroy(gameObject);
-    }
-
-    public void SetVelocity(Vector2 newVelocity)
-    {
-        velocity = newVelocity;
-        if (rb != null)
+        Debug.Log($"{gameObject.name} 执行销毁");
+        
+        // 障碍物生成碎片
+        if (IsObstacleType() && fragmentPrefab != null)
         {
-            rb.velocity = newVelocity;
+            Instantiate(fragmentPrefab, transform.position, Quaternion.identity);
         }
+        
+        Destroy(gameObject); // 立即销毁
     }
 
+    // 设置质量
     public void SetMass(float newMass)
     {
         mass = newMass;
         if (rb != null)
-        {
             rb.mass = newMass;
-        }
     }
     
+    // 判断是否为销毁状态
     private bool isDestroyedState()
     {
         return currentState == CollectibleState.Destroyed || currentState == CollectibleState.Harvested;
     }
+    
+    // 判断是否为可收集类型
+    private bool IsCollectibleType()
+    {
+        return subType == CollectibleSubType.Resource || 
+               subType == CollectibleSubType.Prop || 
+               subType == CollectibleSubType.Garbage;
+    }
+
+    // 判断是否为障碍物类型
+    private bool IsObstacleType()
+    {
+        return subType == CollectibleSubType.CollectibleObstacle || 
+               subType == CollectibleSubType.RegularObstacle;
+    }
+    
+    // 应用初始旋转（仅一次）
+    private void ApplyInitialRotation()
+    {
+        if (rb != null && !initialRotationApplied)
+        {
+            float direction = Random.value < 0.5f ? -1f : 1f;
+            rb.angularVelocity = initialAngularSpeed * direction;
+            initialRotationApplied = true;
+            Debug.Log($"{gameObject.name} 初始旋转角速度: {rb.angularVelocity}");
+        }
+    }
+
 }

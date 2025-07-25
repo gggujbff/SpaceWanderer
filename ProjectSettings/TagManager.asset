@@ -10,6 +10,7 @@ TagManager:
   - Obstacle
   - Collectible
   - Hook
+  - CollectibleObstacle
   layers:
   - Default
   - TransparentFX

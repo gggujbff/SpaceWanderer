@@ -48,12 +48,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   missileLauncher: {fileID: 0}
   laserWeapon: {fileID: 0}
+  netLauncher: {fileID: 0}
   missileIcon: {fileID: 0}
   laserIcon: {fileID: 0}
-  emptySkillIcon: {fileID: 0}
+  netIcon: {fileID: 0}
   missileCooldownText: {fileID: 0}
   laserCooldownText: {fileID: 0}
-  emptySkillCooldownText: {fileID: 0}
+  netCooldownText: {fileID: 0}
+  netCountText: {fileID: 0}
+  missileIntValueText: {fileID: 0}
+  laserIntValueText: {fileID: 0}
+  netIntValueText: {fileID: 0}
   cooldownAlpha: 0.1
 --- !u!114 &6702970920590639494
 MonoBehaviour:

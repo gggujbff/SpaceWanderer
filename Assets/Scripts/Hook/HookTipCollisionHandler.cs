@@ -22,17 +22,14 @@ public class HookTipCollisionHandler : MonoBehaviour
 
         if (logCollisions) Debug.Log($"触发器碰撞: {other.gameObject.name} (标签: {other.tag})");
         
+        // 统一处理所有可抓取物（标签为Collectible）
         if (other.CompareTag("Collectible"))
         {
             HandleCollectibleCollision(other.gameObject);
         }
-        else if (other.CompareTag("Obstacle"))
-        {
-            HandleObstacleCollision(other.gameObject);
-        }
     }
 
-    // 处理实体碰撞（针对障碍物）
+    // 处理实体碰撞（针对带碰撞体的可抓取物）
     private void OnCollisionEnter2D(Collision2D collision)
     {
         // 仅在Launching状态且未钩取物体时检测碰撞
@@ -44,36 +41,34 @@ public class HookTipCollisionHandler : MonoBehaviour
 
         if (logCollisions) Debug.Log($"实体碰撞: {collision.gameObject.name} (标签: {collision.gameObject.tag})");
         
-        if (collision.gameObject.CompareTag("Obstacle"))
+        // 统一处理所有可抓取物（标签为Collectible）
+        if (collision.gameObject.CompareTag("Collectible"))
         {
-            HandleObstacleCollision(collision.gameObject);
+            HandleCollectibleCollision(collision.gameObject);
         }
     }
 
-    // 处理收集物碰撞
-    private void HandleCollectibleCollision(GameObject collectibleObj)
+    // 统一处理所有可抓取物（包括原Collectible和Obstacle）
+    private void HandleCollectibleCollision(GameObject targetObj)
     {
-        var collectible = collectibleObj.GetComponent<CollectibleObject>();
-        if (collectible == null || 
-            (collectible.currentState != CollectibleObject.CollectibleState.FreeFloating && 
-             collectible.currentState != CollectibleObject.CollectibleState.Colliding))
+        var collectible = targetObj.GetComponent<CollectibleObject>();
+        if (collectible == null || isInvalidState(collectible.currentState))
         {
-            if (logCollisions) Debug.Log($"收集物不可钩取: {collectibleObj.name} (状态: {collectible?.currentState})");
+            if (logCollisions) Debug.Log($"物体不可钩取: {targetObj.name} (状态: {collectible?.currentState})");
             return;
         }
 
-        var rb = collectibleObj.GetComponent<Rigidbody2D>();
+        var rb = targetObj.GetComponent<Rigidbody2D>();
         if (rb == null)
         {
-            if (logCollisions) Debug.LogError($"收集物缺少Rigidbody2D: {collectibleObj.name}");
+            if (logCollisions) Debug.LogError($"物体缺少Rigidbody2D: {targetObj.name}");
             return;
         }
 
         // 检查质量限制
         if (rb.mass > maxGrabbableMass)
         {
-            if (logCollisions) Debug.Log($"收集物质量 {rb.mass} 超过限制 {maxGrabbableMass}，开始收回钩爪: {collectibleObj.name}");
-            // 质量过大时不钩取，但触发收回钩爪
+            if (logCollisions) Debug.Log($"物体质量 {rb.mass} 超过限制 {maxGrabbableMass}，开始收回钩爪: {targetObj.name}");
             hookSystem.RetrieveHook();
             return;
         }
@@ -81,65 +76,27 @@ public class HookTipCollisionHandler : MonoBehaviour
         // 标记已钩取物体，防止重复钩取
         hasGrabbedObject = true;
 
-        // 处理钩取逻辑
+        // 处理钩取逻辑（调用CollectibleObject的OnHookCollision）
         collectible.OnHookCollision(hookSystem);
         
-        // 禁用收集物的碰撞体，防止干扰钩爪回收
-        var collider = collectibleObj.GetComponent<Collider2D>();
-        if (collider != null)
+        // 尝试通过OnGrabbed方法确认抓取（兼容原有接口）
+        bool grabSuccess = collectible.OnGrabbed(this);
+        if (!grabSuccess)
         {
-            collider.enabled = false;
-        }
-        
-        collectibleObj.transform.SetParent(transform, true);
-        
-        rb.isKinematic = true;
-        rb.velocity = Vector2.zero;
-        
-        collectible.currentState = CollectibleObject.CollectibleState.Grabbed;
-        if (logCollisions) Debug.Log($"成功钩取收集物: {collectibleObj.name}");
-        
-        ApplyHookEffects(rb);
-    }
-
-    private void HandleObstacleCollision(GameObject obstacleObj)
-    {
-        var obstacle = obstacleObj.GetComponent<MovingObstacle>();
-        if (obstacle == null)
-        {
-            if (logCollisions) Debug.LogError($"障碍物缺少MovingObstacle组件: {obstacleObj.name}");
-            return;
-        }
-
-        var rb = obstacleObj.GetComponent<Rigidbody2D>();
-        if (rb == null)
-        {
-            if (logCollisions) Debug.LogError($"障碍物缺少Rigidbody2D: {obstacleObj.name}");
-            return;
-        }
-
-        if (rb.mass > maxGrabbableMass)
-        {
-            if (logCollisions)
-            {
-                //Debug.Log($"障碍物质量 {rb.mass} 超过限制 {maxGrabbableMass}，开始收回钩爪: {obstacleObj.name}");
-            }
+            if (logCollisions) Debug.LogWarning($"抓取失败: {targetObj.name}");
             hookSystem.RetrieveHook();
             return;
         }
-
-        hasGrabbedObject = true;
-
-        obstacle.transform.SetParent(transform, true); // 保持世界位置
-        obstacle.SetVelocity(Vector2.zero); // 停止障碍物运动
         
-        var collider = obstacleObj.GetComponent<Collider2D>();
+        // 禁用物体的碰撞体，防止干扰钩爪回收
+        var collider = targetObj.GetComponent<Collider2D>();
         if (collider != null)
         {
             collider.enabled = false;
         }
         
-        if (logCollisions) Debug.Log($"成功钩取障碍物: {obstacleObj.name}");
+        if (logCollisions) Debug.Log($"成功钩取物体: {targetObj.name} (类型: {collectible.subType})");
+        
         ApplyHookEffects(rb);
     }
 
@@ -152,25 +109,16 @@ public class HookTipCollisionHandler : MonoBehaviour
         hookSystem.RetrieveHook();
     }
 
-    // 回收完成后重置状态（关键：重置已钩取标记，允许下次钩取）
+    // 回收完成后重置状态
     public void OnRetrieveComplete()
     {
+        // 处理所有子物体中的可收集物
         CollectibleObject[] collectedObjects = GetComponentsInChildren<CollectibleObject>(true);
         foreach (var collectible in collectedObjects)
         {
             if (collectible != null && collectible.currentState != CollectibleObject.CollectibleState.Harvested)
             {
-                collectible.OnHarvested();
-            }
-        }
-
-        // 移除所有附加的障碍物
-        MovingObstacle[] attachedObstacles = GetComponentsInChildren<MovingObstacle>(true);
-        foreach (var obstacle in attachedObstacles)
-        {
-            if (obstacle != null)
-            {
-                Destroy(obstacle.gameObject);
+                collectible.OnHarvested(); // 触发收集逻辑（计分、道具增加等）
             }
         }
 
@@ -182,4 +130,12 @@ public class HookTipCollisionHandler : MonoBehaviour
     {
         hasGrabbedObject = false;
     }
-}    
+
+    // 判断物体状态是否允许被抓取
+    private bool isInvalidState(CollectibleObject.CollectibleState state)
+    {
+        return state == CollectibleObject.CollectibleState.Destroyed || 
+               state == CollectibleObject.CollectibleState.Harvested || 
+               state == CollectibleObject.CollectibleState.Grabbed;
+    }
+}
