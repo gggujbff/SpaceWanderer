@@ -140,6 +140,9 @@ public class HookSystem : MonoBehaviour
 
     private float grabbedMass = 0f; // 抓取物体的总质量
 
+    // 新增：过热进入冷却状态时的事件通知
+    public event System.Action OnOverheatEnterCooling;
+
     /// 初始化单例和绳索渲染器
     private void Awake()
     {
@@ -390,12 +393,15 @@ public class HookSystem : MonoBehaviour
                 {
                     currentOverheatState = OverheatState.Overheating;
                     currentOverheatTime = 0f; // 重置过热时间
-                    isAccelerating = false; // 过热时禁止加速
+                    //isAccelerating = false; // 过热时禁止加速
+                }
+                else
+                {
+                    isAccelerating = isAccelerating && accelerateCDTimer <= 0;
                 }
                 break;
             case OverheatState.Overheating:
                 currentOverheatTime += deltaTime; // 累计过热时间
-                // 过热时间超过最大值→进入冷却状态
                 if (currentOverheatTime >= maxOverheatTime)
                 {
                     if (grabbedMass > 0 && currentState == HookState.Retrieving)
@@ -403,13 +409,17 @@ public class HookSystem : MonoBehaviour
                         ReleaseGrabbedObjects(); // 过热时释放抓取的物体
                     }
                     currentOverheatState = OverheatState.Cooling;
+                    currentOverheatTime = 0f;
+                    // 修复2：触发冷却事件，通知护盾关闭
+                    OnOverheatEnterCooling?.Invoke();
+                    isAccelerating = false;
                 }
                 break;
             case OverheatState.Cooling:
                 // 冷却时温度降低（不低于0）
                 currentTemperature = Mathf.Max(0, currentTemperature - coolingRate * deltaTime);
                 // 温度降至0→回到正常状态
-                if (currentTemperature <= 0)
+                if (currentTemperature <= overheatThreshold)
                 {
                     currentOverheatState = OverheatState.Normal;
                 }

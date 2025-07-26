@@ -527,7 +527,7 @@ public class CollectibleObject : MonoBehaviour
             rb.mass = newMass;
     }
     
-    private bool isDestroyedState()
+    public bool isDestroyedState()
     {
         return currentState == CollectibleState.Destroyed || currentState == CollectibleState.Harvested;
     }
