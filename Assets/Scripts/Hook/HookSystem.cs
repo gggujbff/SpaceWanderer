@@ -39,6 +39,8 @@ public class HookSystem : MonoBehaviour
     public float baseLaunchSpeed = 10f;
     [Tooltip("基础回收速度")]
     public float baseRetrieveSpeed = 10f;
+    [Tooltip("飞船质量")]
+    public float spaceShipMass = 10f;
     
     [Header("加速速度")]
     [Tooltip("旋转加速时能达到的最大速度")]
@@ -101,6 +103,8 @@ public class HookSystem : MonoBehaviour
     [Header("玩家生命属性")]
     [Tooltip("最大生命值")]
     public float maxHealth = 100f;
+    [Tooltip("飞船收到伤害调整")]
+    public float kHealth = 0.1f; // 受伤参数;
 
     [Header("屏幕边界设置")]
     [Tooltip("用于检测屏幕边界的主相机")]

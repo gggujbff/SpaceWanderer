@@ -64,6 +64,8 @@ public class HookTipCollisionHandler : MonoBehaviour
         if (rb.mass > maxGrabbableMass)
         {
             if (logCollisions) Debug.Log($"物体质量 {rb.mass} 超过限制 {maxGrabbableMass}，开始收回钩爪: {targetObj.name}");
+            
+            // 修改：立即收回钩爪，不执行后续逻辑
             hookSystem.RetrieveHook();
             return;
         }
@@ -157,4 +159,4 @@ public class HookTipCollisionHandler : MonoBehaviour
         
         hasGrabbedObject = false;
     }
-}
+}    
