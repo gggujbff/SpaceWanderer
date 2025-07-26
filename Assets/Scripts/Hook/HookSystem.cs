@@ -492,7 +492,7 @@ public class HookSystem : MonoBehaviour
         float massResistance = 1 + (grabbedMass * grabbedMass); // 质量阻力：抓取质量越大，阻力越大（平方关系）
         float baseSpeed = isAccelerating ? accelerateRetrieveSpeed : baseRetrieveSpeed; // 基础速度（加速/正常）
         // 回收速度 = 基础速度 × 2 / 阻力（确保质量越大速度越慢，最低为基础速度的10%）
-        return Mathf.Max(baseSpeed * 0.1f, baseSpeed * 2f / massResistance);
+        return Mathf.Max(0.1f, baseSpeed * 2f / massResistance);
     }
 
     /// 更新待命状态下的旋转角度

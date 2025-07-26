@@ -196,6 +196,13 @@ public class CollectibleObject : MonoBehaviour
             Debug.Log($"碰撞物体2: {collision.gameObject.name} (Tag: {collision.gameObject.tag})");
         }
 
+        // 检查接触点数组是否有效，避免后续逻辑中的索引越界
+        if (collision.contacts.Length == 0)
+        {
+            Debug.LogWarning($"碰撞无接触点: {gameObject.name} vs {collision.gameObject.name}，跳过处理");
+            return;
+        }
+
         if (collision.gameObject.CompareTag("Player") && !hasCollidedWithPlayer)
         {
             if (showDebugInfo)
@@ -259,12 +266,9 @@ public class CollectibleObject : MonoBehaviour
             return;
         }
 
-        // 检查接触点数组是否为空
-        if (collision.contacts.Length == 0)
-        {
-            Debug.LogWarning($"{gameObject.name} 与 {other.gameObject.name} 碰撞但未检测到接触点，跳过伤害计算");
-            return;
-        }
+        // 确保使用有效索引访问接触点数组
+        int contactIndex = Mathf.Clamp(0, 0, collision.contacts.Length - 1);
+        ContactPoint2D contact = collision.contacts[contactIndex];
 
         // 计算约化质量
         float m1 = mass;
@@ -291,9 +295,9 @@ public class CollectibleObject : MonoBehaviour
             Debug.Log($"{other.gameObject.name} 受到伤害: {damageToOther:F2}");
         }
 
-        // 应用伤害（使用第一个接触点）
-        TakeDamage(damageToThis, collision.contacts[0].point);
-        other.TakeDamage(damageToOther, collision.contacts[0].point);
+        // 应用伤害（使用安全索引获取的接触点）
+        TakeDamage(damageToThis, contact.point);
+        other.TakeDamage(damageToOther, contact.point);
     }
 
     private void CalculateAndApplyPlayerDamage(Collision2D collision)
@@ -307,11 +311,9 @@ public class CollectibleObject : MonoBehaviour
 
         if (rb == null) return;
 
-        if (collision.contacts.Length == 0)
-        {
-            Debug.LogWarning($"{gameObject.name} 碰撞玩家但未检测到接触点，跳过自身伤害");
-            return;
-        }
+        // 确保使用有效索引访问接触点数组
+        int contactIndex = Mathf.Clamp(0, 0, collision.contacts.Length - 1);
+        ContactPoint2D contact = collision.contacts[contactIndex];
 
         float shipMass = hookSystem.spaceShipMass;
         float reducedMass = (mass * shipMass) / (mass + shipMass);
@@ -327,12 +329,12 @@ public class CollectibleObject : MonoBehaviour
             Debug.Log($"{gameObject.name} 质量: {mass}, 飞船质量: {shipMass}");
             Debug.Log($"相对速度: {relativeSpeed:F2}, 约化质量: {reducedMass:F2}");
             Debug.Log($"有效动量: {effectiveMomentum:F2}");
-            Debug.Log($"伤害系数: {damageCoefficient}, 受伤参数: {hookSystem.kHealth}"); // 新增日志
+            Debug.Log($"伤害系数: {damageCoefficient}, 受伤参数: {hookSystem.kHealth}");
             Debug.Log($"{gameObject.name} 对飞船造成伤害: {damage:F2}");
         }
 
         hookSystem.TakeDamage(damage);
-        TakeDamage(damage * damageCoefficient, collision.contacts[0].point);
+        TakeDamage(damage * damageCoefficient, contact.point);
     }
 
     // 应用物理碰撞响应
@@ -341,14 +343,10 @@ public class CollectibleObject : MonoBehaviour
         Rigidbody2D otherRb = collision.rigidbody;
         if (rb == null || otherRb == null || isDestroyedState()) return;
 
-        // 检查接触点数组是否为空
-        if (collision.contacts.Length == 0)
-        {
-            Debug.LogWarning($"{gameObject.name} 碰撞但未检测到接触点，跳过物理响应");
-            return;
-        }
-
-        ContactPoint2D contact = collision.contacts[0];
+        // 确保使用有效索引访问接触点数组
+        int contactIndex = Mathf.Clamp(0, 0, collision.contacts.Length - 1);
+        ContactPoint2D contact = collision.contacts[contactIndex];
+        
         Vector2 normal = contact.normal;
         Vector2 tangent = new Vector2(-normal.y, normal.x);
 

@@ -3,6 +3,10 @@ using UnityEngine.UI;
 
 public class MissileLauncher : MonoBehaviour
 {
+    [Header("使用控制")]
+    [Tooltip("是否允许使用导弹发射器")]
+    public bool canUse = true;  // 新增使用控制变量
+    
     [Tooltip("导弹的预制体")]
     public GameObject missilePrefab;
 
@@ -22,7 +26,7 @@ public class MissileLauncher : MonoBehaviour
 
     [Header("发射起点偏移")]
     [Tooltip("导弹从角色中心沿方向偏移的距离")]
-    public float missileOffsetDistance = 0.5f;  // 新增偏移量
+    public float missileOffsetDistance = 0.5f;  // 发射起点偏移量
 
     [Header("瞄准反馈")]
     public float aimTargetRadius = 10f;
@@ -59,6 +63,15 @@ public class MissileLauncher : MonoBehaviour
 
     void Update()
     {
+        // 如果不允许使用，直接退出更新逻辑
+        if (!canUse)
+        {
+            // 重置瞄准状态
+            if (isAiming)
+                isAiming = false;
+            return;
+        }
+
         HandleAimAndFire();
 
         if (isAiming)
@@ -69,8 +82,12 @@ public class MissileLauncher : MonoBehaviour
         UpdateUIDisplay();
     }
 
-    private void HandleAimAndFire()    // 新增瞄准和发射接口
+    private void HandleAimAndFire()    // 瞄准和发射逻辑
     {
+        // 如果不允许使用，直接退出
+        if (!canUse)
+            return;
+
         if (Input.GetKeyDown(fireKey) && !isAiming && CanStartAim())
         {
             isAiming = true;
@@ -81,11 +98,13 @@ public class MissileLauncher : MonoBehaviour
         {
             aimingTimer += Time.deltaTime;
 
+            // 瞄准超时自动取消
             if (aimingTimer >= aimCancelTime)
             {
                 isAiming = false;
             }
 
+            // 松开发射键时判断是否发射
             if (Input.GetKeyUp(fireKey))
             {
                 if (CanFire())
@@ -97,32 +116,38 @@ public class MissileLauncher : MonoBehaviour
         }
     }
 
-    private void UpdateMouseWorldPosition()   
+    private void UpdateMouseWorldPosition()   // 更新鼠标在世界空间的位置
     {
         Vector3 mouseWorldPos3D = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         mouseWorldPos = new Vector2(mouseWorldPos3D.x, mouseWorldPos3D.y);
     }
 
-    private bool CanStartAim()
+    private bool CanStartAim()  // 判断是否可以开始瞄准
     {
-        return (Time.time - lastFireTime >= cooldown) && (currentMissileCount > 0) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
+        return canUse &&  // 检查是否允许使用
+               (Time.time - lastFireTime >= cooldown) && 
+               (currentMissileCount > 0) && 
+               hookSystem.currentTemperature < hookSystem.overheatThreshold;
     }
 
-    private bool CanFire()
+    private bool CanFire()  // 判断是否可以发射
     {
-        return (Time.time - lastFireTime >= cooldown) &&
-               (currentMissileCount > 0) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
+        return canUse &&  // 检查是否允许使用
+               (Time.time - lastFireTime >= cooldown) &&
+               (currentMissileCount > 0) && 
+               hookSystem.currentTemperature < hookSystem.overheatThreshold;
     }
 
-    public void FireMissile()  
+    public void FireMissile()  // 发射导弹
     {
-        if (missilePrefab == null)
+        // 如果不允许使用或预制体为空，直接退出
+        if (!canUse || missilePrefab == null)
         {
             return;
         }
 
         Vector2 fireDirection = (mouseWorldPos - (Vector2)transform.position).normalized;
-        Vector2 origin = (Vector2)transform.position + fireDirection * missileOffsetDistance; // 新增发射起点偏移
+        Vector2 origin = (Vector2)transform.position + fireDirection * missileOffsetDistance; // 计算发射起点
 
         GameObject missile = Instantiate(
             missilePrefab,
@@ -139,22 +164,26 @@ public class MissileLauncher : MonoBehaviour
         currentMissileCount--;
         lastFireTime = Time.time;
 
-        // 调用 HookSystem 的方法增加温度
+        // 调用能量系统增加温度
         hookSystem.AddHeat(launchHeat);
     }
 
     void OnGUI()
     {
-        if (!isAiming || Camera.main == null) return;
+        // 如果不允许使用、未处于瞄准状态或相机为空，不绘制瞄准UI
+        if (!canUse || !isAiming || Camera.main == null) 
+            return;
 
         Vector2 fireDir = (mouseWorldPos - (Vector2)transform.position).normalized;
         Vector3 worldOrigin = (Vector2)transform.position + fireDir * missileOffsetDistance;
         Vector3 screenStart = Camera.main.WorldToScreenPoint(worldOrigin);
         Vector3 screenEnd = Camera.main.WorldToScreenPoint(mouseWorldPos);
 
+        // 转换Y轴坐标（屏幕坐标与世界坐标Y轴方向相反）
         screenStart.y = Screen.height - screenStart.y;
         screenEnd.y = Screen.height - screenEnd.y;
 
+        // 根据瞄准时间变化颜色（从基础色过渡到红色）
         float t = aimingTimer / aimCancelTime;
         Color currentColor = Color.Lerp(aimColor, Color.red, t);
 
@@ -163,7 +192,7 @@ public class MissileLauncher : MonoBehaviour
     }
 
 
-    private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)  // 新增绘制线段接口
+    private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)  // 绘制瞄准线
     {
         Matrix4x4 matrix = GUI.matrix;
         Color savedColor = GUI.color;
@@ -176,13 +205,14 @@ public class MissileLauncher : MonoBehaviour
         GUIUtility.RotateAroundPivot(angle, pointA);
         GUI.DrawTexture(new Rect(pointA.x, pointA.y - width / 2, length, width), _lineTex);
 
+        // 恢复GUI状态
         GUI.matrix = matrix;
         GUI.color = savedColor;
     }
 
-    private void DrawCircle(Vector2 center, float radius, Color color) 
+    private void DrawCircle(Vector2 center, float radius, Color color)  // 绘制瞄准目标圈
     {
-        const int segments = 24;
+        const int segments = 24;  // 圆的边数
         float angleStep = 360f / segments;
         Vector2 prevPoint = center + new Vector2(Mathf.Cos(0), Mathf.Sin(0)) * radius;
 
@@ -203,7 +233,7 @@ public class MissileLauncher : MonoBehaviour
         }
     }
 
-    public void AddcurrentMissileCount(int count)
+    public void AddcurrentMissileCount(int count)  // 增加导弹数量
     {
         currentMissileCount = Mathf.Clamp(currentMissileCount + count, 0, maxMissileCount);
     }

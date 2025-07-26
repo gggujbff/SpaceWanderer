@@ -3,6 +3,11 @@ using UnityEngine.UI;
 
 public class NetLauncher : MonoBehaviour
 {
+    [Header("使用控制")]
+    [Tooltip("是否可以使用该系统")]
+    public bool canUse = true;  // 新增使用控制变量
+    
+    
     [Tooltip("捕网的预制体")]
     public GameObject netPrefab;
 
@@ -35,6 +40,8 @@ public class NetLauncher : MonoBehaviour
     [Header("UI显示")]
     public Slider temperatureSlider;
 
+
+
     private KeyCode fireKey = KeyCode.Alpha3;
     private HookSystem hookSystem;           // 能量管理系统引用
     [HideInInspector] public float lastFireTime = float.MinValue; // 上次发射的时间戳
@@ -59,6 +66,13 @@ public class NetLauncher : MonoBehaviour
 
     void Update()
     {
+        if (!canUse)  // 新增使用控制检查
+        {
+            if (isAiming)
+                isAiming = false;
+            return;
+        }
+
         HandleAimAndFire();
 
         if (isAiming)
@@ -71,6 +85,9 @@ public class NetLauncher : MonoBehaviour
 
     private void HandleAimAndFire()    // 新增瞄准和发射接口
     {
+        if (!canUse)  // 新增使用控制检查
+            return;
+
         if (Input.GetKeyDown(fireKey) && !isAiming && CanStartAim())
         {
             isAiming = true;
@@ -105,17 +122,25 @@ public class NetLauncher : MonoBehaviour
 
     private bool CanStartAim()
     {
-        return (Time.time - lastFireTime >= cooldown) && (currentNetCount > 0) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
+        return canUse &&  // 新增使用控制检查
+               (Time.time - lastFireTime >= cooldown) && 
+               (currentNetCount > 0) && 
+               hookSystem.currentTemperature < hookSystem.overheatThreshold;
     }
 
     private bool CanFire()
     {
-        return (Time.time - lastFireTime >= cooldown) &&
-               (currentNetCount > 0) && hookSystem.currentTemperature < hookSystem.overheatThreshold;
+        return canUse &&  // 新增使用控制检查
+               (Time.time - lastFireTime >= cooldown) &&
+               (currentNetCount > 0) && 
+               hookSystem.currentTemperature < hookSystem.overheatThreshold;
     }
 
     public void FireNet()  
     {
+        if (!canUse)  // 新增使用控制检查
+            return;
+
         if (netPrefab == null)
         {
             return;
@@ -145,7 +170,8 @@ public class NetLauncher : MonoBehaviour
 
     void OnGUI()
     {
-        if (!isAiming || Camera.main == null) return;
+        if (!isAiming || Camera.main == null || !canUse)  // 新增使用控制检查
+            return;
 
         Vector2 fireDir = (mouseWorldPos - (Vector2)transform.position).normalized;
         Vector3 worldOrigin = (Vector2)transform.position + fireDir * netOffsetDistance;
@@ -161,7 +187,6 @@ public class NetLauncher : MonoBehaviour
         DrawLine(screenStart, screenEnd, currentColor, 2f);
         DrawCircle(screenEnd, aimTargetRadius, currentColor);
     }
-
 
     private void DrawLine(Vector2 pointA, Vector2 pointB, Color color, float width)  // 新增绘制线段接口
     {
