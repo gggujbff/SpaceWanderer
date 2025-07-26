@@ -17,7 +17,8 @@ public class Net : MonoBehaviour
     [Tooltip("捕网半径")]
     public float capsuleRadius = 0.3f;
 
-    private List<string> destroyableTags = new List<string> { "Obstacle", "Collectible" };
+    // 仅用于触发爆炸的标签（不包含需要销毁的逻辑）
+    private List<string> explosionTriggerTags = new List<string> { "Obstacle", "Collectible" };
 
     // 胶囊体方向（水平或垂直）
     private CapsuleDirection2D capsuleDirection = CapsuleDirection2D.Horizontal;
@@ -64,7 +65,8 @@ public class Net : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (destroyableTags.Contains(other.tag))
+        // 碰到触发标签列表中的物体时爆炸，但后续处理逻辑分开
+        if (explosionTriggerTags.Contains(other.tag))
         {
             Explode();
         }
@@ -82,18 +84,16 @@ public class Net : MonoBehaviour
         Collider2D[] collidersInRange = Physics2D.OverlapCircleAll(transform.position, explosionRadius);
         foreach (Collider2D collider in collidersInRange)
         {
-            if (collider.CompareTag("Obstacle"))
-            {
-                Destroy(collider.gameObject);
-            }
-            else if (collider.CompareTag("Collectible"))
+            // 只处理Collectible标签的物体（回收逻辑），忽略Obstacle
+            if (collider.CompareTag("Collectible"))
             {
                 CollectibleObject collectible = collider.GetComponent<CollectibleObject>();
                 if (collectible != null)
                 {
-                    collectible.OnHarvested();
+                    collectible.OnHarvested(); // 回收物品
                 }
             }
+            // 移除对Obstacle的销毁逻辑，保持原样
         }
     }
 

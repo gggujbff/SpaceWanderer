@@ -27,6 +27,10 @@ public class HookTipCollisionHandler : MonoBehaviour
         {
             HandleCollectibleCollision(other.gameObject);
         }
+        else if (other.CompareTag("Obstacle"))
+        {
+            HandleObstacleCollision(other.gameObject);
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -42,6 +46,10 @@ public class HookTipCollisionHandler : MonoBehaviour
         if (collision.gameObject.CompareTag("Collectible"))
         {
             HandleCollectibleCollision(collision.gameObject);
+        }
+        else if (collision.gameObject.CompareTag("Obstacle"))
+        {
+            HandleObstacleCollision(collision.gameObject);
         }
     }
 
@@ -92,6 +100,12 @@ public class HookTipCollisionHandler : MonoBehaviour
         if (logCollisions) Debug.Log($"成功钩取物体: {targetObj.name} (类型: {collectible.subType})");
         
         ApplyHookEffects(rb);
+    }
+
+    private void HandleObstacleCollision(GameObject obstacleObj)
+    {
+        if (logCollisions) Debug.Log($"碰到障碍物: {obstacleObj.name}，开始收回钩爪");
+        hookSystem.RetrieveHook();
     }
 
     private void ApplyHookEffects(Rigidbody2D rb)
@@ -159,4 +173,4 @@ public class HookTipCollisionHandler : MonoBehaviour
         
         hasGrabbedObject = false;
     }
-}    
+}
