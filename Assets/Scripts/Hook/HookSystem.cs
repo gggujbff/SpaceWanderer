@@ -42,13 +42,21 @@ public class HookSystem : MonoBehaviour
     [Tooltip("飞船质量")]
     public float spaceShipMass = 10f;
     
-    [Header("加速速度")]
+    [Header("最大速度")]
     [Tooltip("旋转加速时能达到的最大速度")]
     public float accelerateRotateSpeed = 180f; 
     [Tooltip("钩爪发射加速时能达到的最大速度")]
     public float accelerateLaunchSpeed = 18f;  
     [Tooltip("钩爪回收加速时能达到的最大速度")]
     public float accelerateRetrieveSpeed = 22f;  
+    
+    [Header("加速度属性")]
+    [Tooltip("旋转速度的加速度")]
+    public float rotationSmoothSpeed = 5f;
+    [Tooltip("钩爪伸缩速度的加速度")]
+    public float lengthSmoothSpeed = 5f;
+    [Tooltip("方向切换时的加速度")]
+    public float switchDirSmoothSpeed = 8f;
 
     [Header("过热参数")]
     [Tooltip("初始温度值")]
@@ -66,21 +74,12 @@ public class HookSystem : MonoBehaviour
     [Tooltip("热传导系数（越大自然散热越快，1以上可能会导致平衡温度过低出bug")]
     public float k = 0.1f;
     
-    private float c = 1f; // 热容量（影响温度变化幅度，暂固定）
 
     [Header("冷却CD")]
     [Tooltip("旋转方向切换的冷却时间（秒）")]
     public float rotateSwitchCD = 1f;
     [Tooltip("加速功能的冷却时间（秒）")]
     public float accelerateCD = 2f;
-
-    [Header("加速度属性")]
-    [Tooltip("旋转速度的加速度")]
-    public float rotationSmoothSpeed = 5f;
-    [Tooltip("钩爪伸缩速度的加速度")]
-    public float lengthSmoothSpeed = 5f;
-    [Tooltip("方向切换时的加速度")]
-    public float switchDirSmoothSpeed = 8f;
 
     [Header("钩爪质量与生热参数")]
     [Tooltip("钩爪自身的质量")]
@@ -129,6 +128,7 @@ public class HookSystem : MonoBehaviour
     private float accelerateCDTimer = 0f; // 加速功能冷却计时器
     private bool isSwitchingDir = false; // 是否正在切换旋转方向
     private float targetRotateSpeed; // 目标旋转速度（用于平滑过渡）
+    private float c = 1f;
 
     private LineRenderer ropeRenderer; // 绳索渲染器
     private Transform hookTip; // 钩爪尖端Transform

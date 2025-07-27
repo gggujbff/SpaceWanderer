@@ -7,6 +7,7 @@ public class CollectibleObject : MonoBehaviour
     public enum CollectibleState { FreeFloating, AttachedToObstacle, Grabbed, Colliding, Damaged, Destroyed, Harvested }
 
     [Header("基础属性")]
+    public bool canBeDestroyed = true; // 是否可以被破坏
     public CollectibleSubType subType;
     public CollectibleState currentState;
     
@@ -381,12 +382,16 @@ public class CollectibleObject : MonoBehaviour
     // 处理受到的伤害
     public void TakeDamage(float damage, Vector2 hitPoint)
     {
-        if (isDestroyedState()) return;
+        if (!canBeDestroyed || isDestroyedState()) return;
         
         // 减少生命值
+        if (damage > destroyedMomentum)
+        {
+            damage = health;
+        }
+
         health -= damage;
         
-        // 显示伤害效果（如果需要可以保留，不需要可以注释掉）
         if (damageEffectPrefab != null)
         {
             GameObject effect = Instantiate(damageEffectPrefab, hitPoint, Quaternion.identity);
