@@ -3,13 +3,14 @@ using System.Collections;
 
 public class CollectibleObject : MonoBehaviour
 {
+    // （原有枚举和字段定义保持不变）
     public enum CollectibleSubType { Resource, Prop, Garbage, CollectibleObstacle, RegularObstacle }
     public enum CollectibleState { FreeFloating, AttachedToObstacle, Grabbed, Colliding, Damaged, Destroyed, Harvested }
 
     [Header("是否可以被破坏")]
-    public bool canBeDestroyed = true; // 是否可以被破坏
+    public bool canBeDestroyed = true; 
     [Header("是否为固定物体")]
-    public bool isFixedObject = false; // 新增：是否为固定物体（冻结位置和旋转）
+    public bool isFixedObject = false; 
     
     [Header("基础属性")]
     public CollectibleSubType subType;
@@ -27,9 +28,9 @@ public class CollectibleObject : MonoBehaviour
     [Tooltip("物体质量")]
     public float mass = 1f;
     [Tooltip("生命值")]
-    public float health = 100f; // 生命值
+    public float health = 100f; 
     [Tooltip("最大生命值")]
-    public float maxHealth = 100f; // 最大生命值
+    public float maxHealth = 100f; 
     
     [Header("初始速度设置(固定物体无效)")]
     [Tooltip("初始速度大小（由Spawner控制）")]
@@ -51,7 +52,12 @@ public class CollectibleObject : MonoBehaviour
 
 
     [Header("显示设置")]
-    public bool showDebugInfo = true; // 是否显示调试信息
+    public bool showDebugInfo = true; 
+    // 新增：射线显示设置
+    [Tooltip("射线颜色")]
+    public Color directionRayColor = Color.cyan;
+    [Tooltip("射线宽度（Scene视图）")]
+    public float rayWidth = 0.05f;
     
     private Rigidbody2D rb;
     private bool hasCollidedWithPlayer = false;
@@ -61,14 +67,15 @@ public class CollectibleObject : MonoBehaviour
     private bool initialVelocityApplied = false;
     private bool velocitySetBySpawner = false;
     private float restitution = 1f;
-    private float friction = 0f;  //  
+    private float friction = 0f;  
     private GameObject fragmentPrefab;
-    private GameObject damageEffectPrefab; // 碰撞伤害效果
+    private GameObject damageEffectPrefab; 
     private HookSystem hookSystem;
 
 
     private void Start()
     {
+        // （原有Start方法逻辑保持不变）
         rb = GetComponent<Rigidbody2D>();
         hookSystem = HookSystem.Instance;
         if (hookSystem == null)
@@ -76,7 +83,6 @@ public class CollectibleObject : MonoBehaviour
             Debug.LogError("场景中未找到HookSystem实例！请确保HookSystem已挂载且设置为单例模式");
         }
         
-        // 标准化初始方向向量
         NormalizeInitialDirection();
         
         if (rb != null)
@@ -86,10 +92,8 @@ public class CollectibleObject : MonoBehaviour
             rb.drag = 0f;
             rb.angularDrag = 0.2f;
 
-            // 新增：处理固定物体逻辑
             if (isFixedObject)
             {
-                // 冻结所有位置和旋转轴
                 rb.constraints = RigidbodyConstraints2D.FreezeAll;
                 if (showDebugInfo)
                     Debug.Log($"{gameObject.name} 是固定物体，已冻结所有位置和旋转");
@@ -103,7 +107,6 @@ public class CollectibleObject : MonoBehaviour
                 };
             }
 
-            // 固定物体不应用初始速度
             if (!isFixedObject && !velocitySetBySpawner && initialSpeed > 0)
             {
                 StartCoroutine(DelayedApplyVelocity());
@@ -115,7 +118,7 @@ public class CollectibleObject : MonoBehaviour
         }
 
         currentState = CollectibleState.FreeFloating;
-        health = maxHealth; // 初始化生命值
+        health = maxHealth;
         
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if (player != null)
@@ -136,31 +139,24 @@ public class CollectibleObject : MonoBehaviour
             Debug.LogWarning($"{gameObject.name} 的Tag未设置为'Collectible'，可能无法参与碰撞逻辑");
         }
 
-        // 固定物体不应用初始旋转
         if (!isFixedObject)
         {
             ApplyInitialRotation();
         }
     }
 
-    /// <summary>
-    /// 标准化初始方向向量，确保其模长为1（仅表示方向）
-    /// 若原始向量为零向量，默认向右（Vector2.right）
-    /// </summary>
+    // （原有NormalizeInitialDirection方法保持不变）
     private void NormalizeInitialDirection()
     {
-        // 计算原始方向向量的模长
         float magnitude = initialDirection.magnitude;
         
-        // 若模长接近0（零向量），赋予默认方向
         if (magnitude < 0.001f)
         {
-            initialDirection = Vector2.right; // 默认向右
+            initialDirection = Vector2.right;
             Debug.LogWarning($"{gameObject.name} 的初始方向为零向量，已自动设置为向右（Vector2.right）");
         }
         else
         {
-            // 标准化：按原比例缩放至模长=1
             initialDirection = initialDirection.normalized;
         }
         
@@ -170,9 +166,31 @@ public class CollectibleObject : MonoBehaviour
         }
     }
 
+    // 新增：在Scene视图绘制方向射线
+    private void OnDrawGizmos()
+    {
+        // 固定物体不显示射线
+        if (isFixedObject) return;
+
+        // 保存当前Gizmos状态
+        Gizmos.color = directionRayColor;
+        Vector3 rayStart = transform.position;
+        // 射线长度 = 初始速度大小（速度越大射线越长）
+        Vector3 rayEnd = rayStart + (Vector3)(initialDirection * initialSpeed);
+
+        // 绘制射线（使用线框球体增强可见性）
+        Gizmos.DrawLine(rayStart, rayEnd);
+        
+        // 在射线末端绘制一个小球体作为箭头
+        Gizmos.DrawWireSphere(rayEnd, rayWidth * 2);
+
+        // 绘制射线起点的球体（表示物体中心）
+        Gizmos.DrawWireSphere(rayStart, rayWidth);
+    }
+
+    // （以下所有原有方法保持不变）
     public void SetInitialVelocity(float speed, Vector2 direction)
     {
-        // 固定物体不接受外部速度设置
         if (isFixedObject) return;
         
         initialSpeed = speed;
@@ -202,7 +220,6 @@ public class CollectibleObject : MonoBehaviour
             Debug.Log($"碰撞物体2: {collision.gameObject.name} (Tag: {collision.gameObject.tag})");
         }
 
-        // 检查接触点数组是否有效，避免后续逻辑中的索引越界
         if (collision.contacts.Length == 0)
         {
             Debug.LogWarning($"碰撞无接触点: {gameObject.name} vs {collision.gameObject.name}，跳过处理");
@@ -263,7 +280,6 @@ public class CollectibleObject : MonoBehaviour
         }
     }
 
-    // 应用碰撞伤害（物体间碰撞）
     private void ApplyCollisionDamage(CollectibleObject other, Collision2D collision)
     {
         if (rb == null || other.rb == null)
@@ -272,22 +288,14 @@ public class CollectibleObject : MonoBehaviour
             return;
         }
 
-        // 确保使用有效索引访问接触点数组
         int contactIndex = Mathf.Clamp(0, 0, collision.contacts.Length - 1);
         ContactPoint2D contact = collision.contacts[contactIndex];
 
-        // 计算约化质量
         float m1 = mass;
         float m2 = other.mass;
         float reducedMass = (m1 * m2) / (m1 + m2);
-    
-        // 相对速度大小
         float relativeSpeed = collision.relativeVelocity.magnitude;
-    
-        // 计算有效动量（使用约化质量）
         float effectiveMomentum = reducedMass * relativeSpeed;
-    
-        // 计算伤害（基于动量和系数）
         float damageToThis = effectiveMomentum * damageCoefficient;
         float damageToOther = effectiveMomentum * other.damageCoefficient;
 
@@ -301,14 +309,12 @@ public class CollectibleObject : MonoBehaviour
             Debug.Log($"{other.gameObject.name} 受到伤害: {damageToOther:F2}");
         }
 
-        // 应用伤害（使用安全索引获取的接触点）
         TakeDamage(damageToThis, contact.point);
         other.TakeDamage(damageToOther, contact.point);
     }
 
     private void CalculateAndApplyPlayerDamage(Collision2D collision)
     {
-        // 检查HookSystem是否存在
         if (hookSystem == null)
         {
             Debug.LogError("HookSystem实例不存在，无法计算对玩家的伤害！");
@@ -317,7 +323,6 @@ public class CollectibleObject : MonoBehaviour
 
         if (rb == null) return;
 
-        // 确保使用有效索引访问接触点数组
         int contactIndex = Mathf.Clamp(0, 0, collision.contacts.Length - 1);
         ContactPoint2D contact = collision.contacts[contactIndex];
 
@@ -325,8 +330,6 @@ public class CollectibleObject : MonoBehaviour
         float reducedMass = (mass * shipMass) / (mass + shipMass);
         float relativeSpeed = collision.relativeVelocity.magnitude;
         float effectiveMomentum = reducedMass * relativeSpeed;
-        
-        // 使用HookSystem中的kHealth参数调整伤害比例
         float damage = effectiveMomentum * damageCoefficient * hookSystem.kHealth;
 
         if (showDebugInfo)
@@ -343,13 +346,11 @@ public class CollectibleObject : MonoBehaviour
         TakeDamage(damage * damageCoefficient, contact.point);
     }
 
-    // 应用物理碰撞响应
     private void ApplyPhysicsCollision(Collision2D collision)
     {
         Rigidbody2D otherRb = collision.rigidbody;
         if (rb == null || otherRb == null || isDestroyedState()) return;
 
-        // 确保使用有效索引访问接触点数组
         int contactIndex = Mathf.Clamp(0, 0, collision.contacts.Length - 1);
         ContactPoint2D contact = collision.contacts[contactIndex];
         
@@ -376,7 +377,6 @@ public class CollectibleObject : MonoBehaviour
         ApplyAntiStickForce(rb, otherRb);
     }
 
-    // 应用反粘连力，防止物体粘在一起
     private void ApplyAntiStickForce(Rigidbody2D rb1, Rigidbody2D rb2)
     {
         Vector2 randomDir = Random.insideUnitCircle.normalized * 0.02f;
@@ -384,12 +384,10 @@ public class CollectibleObject : MonoBehaviour
         rb2?.AddForce(-randomDir, ForceMode2D.Impulse);
     }
 
-    // 处理受到的伤害
     public void TakeDamage(float damage, Vector2 hitPoint)
     {
         if (!canBeDestroyed || isDestroyedState()) return;
         
-        // 减少生命值
         if (damage > destroyedMomentum)
         {
             damage = health;
@@ -406,7 +404,6 @@ public class CollectibleObject : MonoBehaviour
         if (showDebugInfo)
             Debug.Log($"{gameObject.name} 受到伤害: {damage:F2}, 剩余生命值: {health:F2}");
 
-        // 检查是否应该销毁
         if (health <= 0)
         {
             DestroyObject();
@@ -450,18 +447,15 @@ public class CollectibleObject : MonoBehaviour
         if (currentState != CollectibleState.Grabbed || isFixedObject) return;
 
         currentState = CollectibleState.FreeFloating;
-        // 关键：彻底解除与钩爪的父子关系
         if (transform.parent != null && transform.parent.CompareTag("Hook"))
         {
-            transform.SetParent(null); // 解除父对象
-            // 强制与钩爪位置分离（避免帧同步延迟导致的跟随）
+            transform.SetParent(null);
             transform.position += (Vector3)Random.insideUnitCircle * 0.1f; 
         }
 
         if (rb != null)
         {
-            rb.isKinematic = false; // 恢复物理响应
-            // 赋予微小初速度，确保脱离钩爪
+            rb.isKinematic = false;
             rb.velocity = new Vector2(
                 Random.Range(-1f, 1f), 
                 Random.Range(-1f, 1f)
@@ -517,7 +511,6 @@ public class CollectibleObject : MonoBehaviour
         {
             GameObject fragments = Instantiate(fragmentPrefab, transform.position, Quaternion.identity);
             
-            // 传递碎片的初始速度（模拟爆炸效果）
             Rigidbody2D[] fragmentRbs = fragments.GetComponentsInChildren<Rigidbody2D>();
             foreach (Rigidbody2D rb in fragmentRbs)
             {
@@ -557,7 +550,6 @@ public class CollectibleObject : MonoBehaviour
     
     public void ApplyInitialRotation()
     {
-        // 固定物体不应用初始旋转
         if (isFixedObject || rb == null || initialRotationApplied) return;
         
         float direction = Random.value < 0.5f ? -1f : 1f;
