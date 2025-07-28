@@ -12,7 +12,7 @@ public class BackGroundController : MonoBehaviour
     {
         if (target != null)
         {
-            transform.position = target.position + offset;
+            transform.position = (target.position + offset) * kSpeed;
         }
     }
 }
