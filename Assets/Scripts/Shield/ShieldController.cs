@@ -31,7 +31,7 @@ public class ShieldController : MonoBehaviour
     [Range(3, 36)]
     public int collisionSegments = 12;
 
-    private float collisionSizeMultiplier = 1.0f;
+    private float collisionSizeMultiplier = 0.5f;
 
     [Header("护盾属性")]
     [Tooltip("护盾最大生命值")]

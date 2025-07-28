@@ -118,11 +118,11 @@ public class HookSystem : MonoBehaviour
     [HideInInspector] public OverheatState currentOverheatState = OverheatState.Normal; // 当前过热状态
     [HideInInspector] public float currentOverheatTime = 0f; // 过热持续时间
     [HideInInspector] public float spaceShipVelocity = 0f; // 飞船速度（暂未使用）
+    [HideInInspector]public int currentScore = 0; // 当前分数
 
     private float currentRotateSpeed; // 当前旋转速度（度/秒）
     private float currentLaunchSpeed; // 当前发射速度
     private float currentRetrieveSpeed; // 当前回收速度
-    private int currentScore = 0; // 当前分数
     private bool isAccelerating = false; // 是否正在加速
     private float rotateSwitchCDTimer = 0f; // 旋转方向切换冷却计时器
     private float accelerateCDTimer = 0f; // 加速功能冷却计时器
