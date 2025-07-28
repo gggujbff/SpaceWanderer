@@ -10,6 +10,9 @@ public class Missile : MonoBehaviour
     [Tooltip("最大飞行距离")]
     public float maxRange = 20f;
 
+    [Tooltip("爆炸伤害值")]
+    public float explosionDamage = 50f;  // 新增：爆炸伤害
+
     [Header("导弹大小")]
     [Tooltip("导弹长度")]
     public float capsuleLength = 1f;
@@ -17,7 +20,7 @@ public class Missile : MonoBehaviour
     [Tooltip("导弹半径")]
     public float capsuleRadius = 0.3f;
 
-    private List<string> destroyableTags = new List<string> { "Obstacle" , "Collectible"};
+    private List<string> damageableTags = new List<string> { "Obstacle", "Collectible" };  // 重命名标签列表
 
     // 胶囊体方向（水平或垂直）
     private CapsuleDirection2D capsuleDirection = CapsuleDirection2D.Horizontal;
@@ -64,7 +67,7 @@ public class Missile : MonoBehaviour
 
     void OnTriggerEnter2D(Collider2D other)
     {
-        if (destroyableTags.Contains(other.tag))
+        if (damageableTags.Contains(other.tag))  // 标签列表名称更新
         {
             Explode();
         }
@@ -73,22 +76,30 @@ public class Missile : MonoBehaviour
     void Explode()
     {
         DrawExplosionRange();
-        DestroyObjectsInRange();
+        DamageObjectsInRange();  // 方法名称和功能更新
         Destroy(gameObject);
     }
 
-    private void DestroyObjectsInRange()
+    // 从直接销毁改为造成伤害
+    private void DamageObjectsInRange()
     {
         Collider2D[] collidersInRange = Physics2D.OverlapCircleAll(transform.position, explosionRadius);
         foreach (Collider2D collider in collidersInRange)
         {
-            if (destroyableTags.Contains(collider.tag))
+            if (damageableTags.Contains(collider.tag))
             {
-                Destroy(collider.gameObject);
+                // 尝试获取CollectibleObject组件
+                CollectibleObject target = collider.GetComponent<CollectibleObject>();
+                if (target != null)
+                {
+                    // 对目标造成伤害，伤害值为设定的爆炸伤害
+                    target.TakeDamage(explosionDamage, transform.position);
+                }
             }
         }
     }
 
+    // 以下方法保持不变
     void DrawExplosionRange()
     {
         GameObject indicator = new GameObject("ExplosionRange");

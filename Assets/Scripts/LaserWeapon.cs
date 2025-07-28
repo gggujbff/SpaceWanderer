@@ -5,7 +5,7 @@ public class LaserWeapon : MonoBehaviour
 {
     [Header("使用控制")]
     [Tooltip("是否允许使用激光武器")]
-    public bool canUse = true;  // 新增使用控制变量
+    public bool canUse = true;
     
     [Tooltip("激光射线渲染组件（LineRenderer）")]
     public LineRenderer laserLine;
@@ -49,8 +49,12 @@ public class LaserWeapon : MonoBehaviour
     [Tooltip("激光每秒释放的热量（持续时间内持续加热）")]
     public float continuousFireHeatRate = 5f;
 
+    [Header("伤害参数")]
+    [Tooltip("激光每秒造成的伤害")]
+    public float damagePerSecond = 20f;  // 新增：激光每秒伤害值
 
-    private List<string> destroyableTags = new List<string> { "Obstacle", "Collectible" };
+
+    private List<string> damageableTags = new List<string> { "Obstacle", "Collectible" };  // 标签列表重命名
 
     private Color aimColor = new Color(1, 0, 0, 0.9f);
     private float aimTargetRadius = 10f;
@@ -81,7 +85,7 @@ public class LaserWeapon : MonoBehaviour
         }
 
         UpdateLaserAppearance();
-        fireCount = Mathf.Min(fireCount, maxCount); // 确保初始值不超过上限
+        fireCount = Mathf.Min(fireCount, maxCount);
     }
 
     private void UpdateLaserAppearance()
@@ -113,7 +117,6 @@ public class LaserWeapon : MonoBehaviour
 
     void Update()
     {
-        // 如果不可用，重置状态并退出
         if (!canUse)
         {
             if (isAiming)
@@ -131,7 +134,6 @@ public class LaserWeapon : MonoBehaviour
 
     private void HandleAimAndFire()
     {
-        // 不可用时直接返回
         if (!canUse)
             return;
 
@@ -169,7 +171,7 @@ public class LaserWeapon : MonoBehaviour
 
     private bool CanStartAim()
     {
-        return canUse &&  // 新增使用控制检查
+        return canUse && 
                (Time.time - lastFireTime >= cooldown) && 
                hookSystem.currentTemperature < hookSystem.overheatThreshold &&
                fireCount > 0;
@@ -177,7 +179,7 @@ public class LaserWeapon : MonoBehaviour
 
     private bool CanFire()
     {
-        return canUse &&  // 新增使用控制检查
+        return canUse && 
                (Time.time - lastFireTime >= cooldown) && 
                hookSystem.currentTemperature < hookSystem.overheatThreshold &&
                fireCount > 0;
@@ -185,7 +187,6 @@ public class LaserWeapon : MonoBehaviour
 
     public void FireLaser()
     {
-        // 不可用或次数不足时直接返回
         if (!canUse || laserLine == null || fireCount <= 0)
         {
             return;
@@ -195,9 +196,8 @@ public class LaserWeapon : MonoBehaviour
         StartCoroutine(KeepFiringLaser(fireDirection));
 
         lastFireTime = Time.time;
-        fireCount--; // 使用次数减一
+        fireCount--;
 
-        // 初始热量
         hookSystem.AddHeat(fireHeat);
     }
 
@@ -209,7 +209,7 @@ public class LaserWeapon : MonoBehaviour
 
         laserLine.enabled = true;
 
-        while (fireTimer < fireDuration && canUse)  // 循环中检查可用性
+        while (fireTimer < fireDuration && canUse)
         {
             if (currentLength < maxLength)
             {
@@ -218,9 +218,8 @@ public class LaserWeapon : MonoBehaviour
             }
 
             UpdateLaserLineProgressive(direction, currentLength);
-            ApplyLaserEffectWithinLength(direction, currentLength);
+            ApplyLaserDamageWithinLength(direction, currentLength, Time.deltaTime);  // 传入deltaTime用于伤害计算
 
-            // 持续热量增加
             hookSystem.AddHeat(continuousFireHeatRate * Time.deltaTime);
 
             fireTimer += Time.deltaTime;
@@ -236,7 +235,7 @@ public class LaserWeapon : MonoBehaviour
         Vector2 endPos = startPos + direction * length;
 
         RaycastHit2D hit = Physics2D.Raycast(startPos, direction, length);
-        if (hit.collider != null && destroyableTags.Contains(hit.collider.tag))
+        if (hit.collider != null && damageableTags.Contains(hit.collider.tag))
         {
             endPos = hit.point;
         }
@@ -245,23 +244,31 @@ public class LaserWeapon : MonoBehaviour
         laserLine.SetPosition(1, endPos);
     }
 
-    private void ApplyLaserEffectWithinLength(Vector2 direction, float length)
+    // 从直接销毁改为造成持续伤害
+    private void ApplyLaserDamageWithinLength(Vector2 direction, float length, float deltaTime)
     {
         Vector2 startPos = (Vector2)transform.position + direction * laserOffsetDistance;
         RaycastHit2D[] hits = Physics2D.RaycastAll(startPos, direction, length);
 
+        // 计算本次帧更新的伤害量（每秒伤害 × 帧时间）
+        float damageThisFrame = damagePerSecond * deltaTime;
+
         foreach (RaycastHit2D hit in hits)
         {
-            if (hit.collider != null && destroyableTags.Contains(hit.collider.tag))
+            if (hit.collider != null && damageableTags.Contains(hit.collider.tag))
             {
-                Destroy(hit.collider.gameObject);
+                // 尝试获取CollectibleObject组件并造成伤害
+                CollectibleObject target = hit.collider.GetComponent<CollectibleObject>();
+                if (target != null)
+                {
+                    target.TakeDamage(damageThisFrame, hit.point);
+                }
             }
         }
     }
 
     void OnGUI()
     {
-        // 不可用时不绘制瞄准UI
         if (!canUse || !isAiming || Camera.main == null) return;
 
         Vector2 fireDir = (mouseWorldPos - (Vector2)transform.position).normalized;
@@ -278,7 +285,6 @@ public class LaserWeapon : MonoBehaviour
         DrawLine(screenStart, screenEnd, currentColor, 2f);
         DrawCircle(screenEnd, aimTargetRadius, currentColor);
 
-        // 显示剩余使用次数
         GUI.Label(new Rect(10, 10, 250, 30), $"Laser Ammo: {fireCount}/{maxCount}", new GUIStyle
         {
             fontSize = 16,
@@ -325,15 +331,13 @@ public class LaserWeapon : MonoBehaviour
             UpdateLaserAppearance();
         }
         
-        // 确保编辑器中设置的值合理
         maxCount = Mathf.Max(1, maxCount);
         fireCount = Mathf.Clamp(fireCount, 0, maxCount);
     }
     
-    // 增加激光使用次数
     public void AddcurrentLaserCount(int amount)
     {
-        if (canUse)  // 仅在可用时允许增加数量
+        if (canUse)
         {
             fireCount = Mathf.Min(fireCount + amount, maxCount);
         }
