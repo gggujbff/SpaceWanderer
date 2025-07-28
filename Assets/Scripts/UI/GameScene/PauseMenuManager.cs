@@ -6,47 +6,76 @@ public class PauseMenuManager : MonoBehaviour
 {
     public GameObject stopUI;
     public Button continueButton;
+    public SettingsButtonHandler settingsButtonHandler; // 引用设置按钮处理器
 
     private bool isPaused = false;
 
     void Start()
     {
-        // 确保初始时滤镜和按钮是隐藏的
-        stopUI.gameObject.SetActive(false);
+        stopUI.SetActive(false);
         continueButton.gameObject.SetActive(false);
-
-        // 为继续按钮添加点击事件
         continueButton.onClick.AddListener(ResumeGame);
+        
+        if (settingsButtonHandler != null)
+        {
+            settingsButtonHandler.OnWindowOpened += HandleWindowOpened;
+            settingsButtonHandler.OnWindowClosed += HandleWindowClosed;
+        }
     }
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Escape) && !isPaused)
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
-            PauseGame();
+            if (!isPaused)
+            {
+                PauseGame();
+            }
+            else if (settingsButtonHandler == null || !settingsButtonHandler.IsWindowOpen())
+            {
+                ResumeGame();
+            }
         }
     }
 
     void PauseGame()
     {
         isPaused = true;
-        Time.timeScale = 0f; // 暂停游戏时间
-
-        // 显示滤镜和按钮
-        stopUI.gameObject.SetActive(true);
+        Time.timeScale = 0f;
+        stopUI.SetActive(true);
         continueButton.gameObject.SetActive(true);
-
-        // 选中继续按钮
         EventSystem.current.SetSelectedGameObject(continueButton.gameObject);
     }
 
     void ResumeGame()
     {
         isPaused = false;
-        Time.timeScale = 1f; // 恢复游戏时间
-
-        // 隐藏滤镜和按钮
-        stopUI.gameObject.SetActive(false);
+        Time.timeScale = 1f;
+        stopUI.SetActive(false);
         continueButton.gameObject.SetActive(false);
     }
-}
+
+    // 处理悬浮窗打开事件
+    private void HandleWindowOpened()
+    {
+        EventSystem.current.SetSelectedGameObject(null);
+    }
+
+    // 处理悬浮窗关闭事件
+    private void HandleWindowClosed()
+    {
+        if (isPaused)
+        {
+            EventSystem.current.SetSelectedGameObject(continueButton.gameObject);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (settingsButtonHandler != null)
+        {
+            settingsButtonHandler.OnWindowOpened -= HandleWindowOpened;
+            settingsButtonHandler.OnWindowClosed -= HandleWindowClosed;
+        }
+    }
+}    

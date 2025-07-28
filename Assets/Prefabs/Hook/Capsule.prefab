@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6543386079128754975}
   m_Layer: 0
   m_Name: Capsule
-  m_TagString: Untagged
+  m_TagString: Hook
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -99,6 +99,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   hookSystem: {fileID: 0}
+  heatPerUnitMass: 1
+  maxGrabbableMass: 1e+12
+  logCollisions: 1
 --- !u!61 &6543386079128754975
 BoxCollider2D:
   m_ObjectHideFlags: 0
