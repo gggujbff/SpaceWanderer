@@ -50,7 +50,7 @@ public class GameOverController : MonoBehaviour
     // 2D碰撞检测（如果使用2D碰撞体，请启用此方法并注释上面的3D碰撞方法）
     private void OnCollisionEnter2D(Collision2D collision)
     {
-         if (gameOverType == GameOverType.Collision && 
+        if (gameOverType == GameOverType.Collision && 
             collision.gameObject.CompareTag("Player"))
         {
             GameOver();

@@ -170,18 +170,6 @@ public class CollectibleObject : MonoBehaviour
         }
     }
 
-    private void ApplyInitialVelocity()
-    {
-        // 固定物体不应用初始速度
-        if (isFixedObject || rb == null || initialVelocityApplied) return;
-        
-        Vector2 finalVelocity = initialDirection * initialSpeed;
-        rb.velocity = finalVelocity;
-        initialVelocityApplied = true;
-        if (showDebugInfo)
-            Debug.Log($"{gameObject.name} 初始速度: {finalVelocity}");
-    }
-
     public void SetInitialVelocity(float speed, Vector2 direction)
     {
         // 固定物体不接受外部速度设置
