@@ -41,7 +41,7 @@ public class CollectibleObject : MonoBehaviour
     [Header("初始旋转设置")]
     [Tooltip("初始旋转角速度（正负方向随机）")]
     public float initialAngularSpeed = 0f;
-    private bool initialRotationApplied = false;
+    [HideInInspector] public bool initialRotationApplied = false;
 
     [Header("碰撞伤害设置")]
     [Tooltip("销毁所需的最小相对动量（碰撞瞬间检测）")]
@@ -555,7 +555,7 @@ public class CollectibleObject : MonoBehaviour
                subType == CollectibleSubType.RegularObstacle;
     }
     
-    private void ApplyInitialRotation()
+    public void ApplyInitialRotation()
     {
         // 固定物体不应用初始旋转
         if (isFixedObject || rb == null || initialRotationApplied) return;
