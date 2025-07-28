@@ -6,12 +6,8 @@ public class CollectibleObject : MonoBehaviour
     public enum CollectibleSubType { Resource, Prop, Garbage, CollectibleObstacle, RegularObstacle }
     public enum CollectibleState { FreeFloating, AttachedToObstacle, Grabbed, Colliding, Damaged, Destroyed, Harvested }
 
-    [Header("是否可以被破坏")]
-    public bool canBeDestroyed = true; // 是否可以被破坏
-    [Header("是否为固定物体")]
-    public bool isFixedObject = false; // 新增：是否为固定物体（冻结位置和旋转）
-    
     [Header("基础属性")]
+    public bool canBeDestroyed = true; // 是否可以被破坏
     public CollectibleSubType subType;
     public CollectibleState currentState;
     
@@ -31,7 +27,7 @@ public class CollectibleObject : MonoBehaviour
     [Tooltip("最大生命值")]
     public float maxHealth = 100f; // 最大生命值
     
-    [Header("初始速度设置(固定物体无效)")]
+    [Header("初始速度设置")]
     [Tooltip("初始速度大小（由Spawner控制）")]
     public float initialSpeed = 0f;
     
@@ -85,15 +81,7 @@ public class CollectibleObject : MonoBehaviour
             rb.drag = 0f;
             rb.angularDrag = 0.2f;
 
-            // 新增：处理固定物体逻辑
-            if (isFixedObject)
-            {
-                // 冻结所有位置和旋转轴
-                rb.constraints = RigidbodyConstraints2D.FreezeAll;
-                if (showDebugInfo)
-                    Debug.Log($"{gameObject.name} 是固定物体，已冻结所有位置和旋转");
-            }
-            else if (IsObstacleType())
+            if (IsObstacleType())
             {
                 rb.sharedMaterial = new PhysicsMaterial2D
                 {
@@ -102,8 +90,7 @@ public class CollectibleObject : MonoBehaviour
                 };
             }
 
-            // 固定物体不应用初始速度
-            if (!isFixedObject && !velocitySetBySpawner && initialSpeed > 0)
+            if (!velocitySetBySpawner && initialSpeed > 0)
             {
                 StartCoroutine(DelayedApplyVelocity());
             }
@@ -134,12 +121,8 @@ public class CollectibleObject : MonoBehaviour
         {
             Debug.LogWarning($"{gameObject.name} 的Tag未设置为'Collectible'，可能无法参与碰撞逻辑");
         }
-
-        // 固定物体不应用初始旋转
-        if (!isFixedObject)
-        {
-            ApplyInitialRotation();
-        }
+        
+        ApplyInitialRotation();
     }
 
     /// <summary>
@@ -171,22 +154,20 @@ public class CollectibleObject : MonoBehaviour
 
     private void ApplyInitialVelocity()
     {
-        // 固定物体不应用初始速度
-        if (isFixedObject || rb == null || initialVelocityApplied) return;
-        
-        Vector2 finalVelocity = initialDirection * initialSpeed;
-        rb.velocity = finalVelocity;
-        initialVelocityApplied = true;
-        if (showDebugInfo)
-            Debug.Log($"{gameObject.name} 初始速度: {finalVelocity}");
+        if (rb != null && !initialVelocityApplied)
+        {
+            Vector2 finalVelocity = initialDirection * initialSpeed;
+            rb.velocity = finalVelocity;
+            initialVelocityApplied = true;
+            if (showDebugInfo)
+                Debug.Log($"{gameObject.name} 初始速度: {finalVelocity}");
+        }
     }
 
     public void SetInitialVelocity(float speed, Vector2 direction)
     {
-        // 固定物体不接受外部速度设置
-        if (isFixedObject) return;
-        
         initialSpeed = speed;
+        // 确保外部设置的方向也被标准化
         initialDirection = direction.normalized;
         velocitySetBySpawner = true;
         StartCoroutine(DelayedApplyVelocity());
@@ -196,10 +177,13 @@ public class CollectibleObject : MonoBehaviour
     {
         yield return null;
         
-        Vector2 finalVelocity = initialDirection * initialSpeed;
-        rb.velocity = finalVelocity;
-        if (showDebugInfo)
-            Debug.Log($"[{Time.time}] 延迟应用速度: {finalVelocity} (物体: {gameObject.name})");
+        if (rb != null)
+        {
+            Vector2 finalVelocity = initialDirection * initialSpeed;
+            rb.velocity = finalVelocity;
+            if (showDebugInfo)
+                Debug.Log($"[{Time.time}] 延迟应用速度: {finalVelocity} (物体: {gameObject.name})");
+        }
     }
 
     private void OnCollisionEnter2D(Collision2D collision)
@@ -436,7 +420,7 @@ public class CollectibleObject : MonoBehaviour
 
     public bool OnGrabbed(HookTipCollisionHandler hookTip)
     {
-        if (isDestroyedState() || !IsCollectibleType() || isFixedObject) return false;
+        if (isDestroyedState() || !IsCollectibleType()) return false;
 
         if (currentState == CollectibleState.FreeFloating || currentState == CollectibleState.Colliding)
         {
@@ -458,7 +442,7 @@ public class CollectibleObject : MonoBehaviour
 
     public void OnReleased()
     {
-        if (currentState != CollectibleState.Grabbed || isFixedObject) return;
+        if (currentState != CollectibleState.Grabbed) return;
 
         currentState = CollectibleState.FreeFloating;
         // 关键：彻底解除与钩爪的父子关系
@@ -568,13 +552,13 @@ public class CollectibleObject : MonoBehaviour
     
     private void ApplyInitialRotation()
     {
-        // 固定物体不应用初始旋转
-        if (isFixedObject || rb == null || initialRotationApplied) return;
-        
-        float direction = Random.value < 0.5f ? -1f : 1f;
-        rb.angularVelocity = initialAngularSpeed * direction;
-        initialRotationApplied = true;
-        if (showDebugInfo)
-            Debug.Log($"{gameObject.name} 初始旋转角速度: {rb.angularVelocity}");
+        if (rb != null && !initialRotationApplied)
+        {
+            float direction = Random.value < 0.5f ? -1f : 1f;
+            rb.angularVelocity = initialAngularSpeed * direction;
+            initialRotationApplied = true;
+            if (showDebugInfo)
+                Debug.Log($"{gameObject.name} 初始旋转角速度: {rb.angularVelocity}");
+        }
     }
 }
