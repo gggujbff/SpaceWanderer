@@ -46,6 +46,7 @@ public class CollectibleObject : MonoBehaviour
     [Header("碰撞伤害设置")]
     [Tooltip("销毁所需的最小相对动量（碰撞瞬间检测）")]
     public float destroyedMomentum = 10f;
+    [Tooltip("易碎值")]
     public float damageCoefficient = 0.5f;
 
 
